@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 930" role="img" aria-labelledby="diagram-title diagram-description">
+  <title id="diagram-title">Six-step RHOAI API contract pull-request gate and release flow</title>
+  <desc id="diagram-description">The gate checks out the prospective merge, generates and validates a candidate contract, retrieves protected baselines, compares structure and behavior, passes compatible changes, and fails breaking or integrity drift. Released versions then run through supported-matrix conformance.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" class="arrow-head" />
+    </marker>
+    <style>
+      .canvas { fill: #f7f9fb; stroke: #c8d1dc; stroke-width: 2; }
+      .box { fill: #ffffff; stroke: #657789; stroke-width: 2; }
+      .central { fill: #e7f2ff; stroke: #0066cc; }
+      .action { fill: #e7f2ff; stroke: #0066cc; stroke-width: 3; }
+      .checks { fill: #ffffff; stroke: #0066cc; stroke-width: 3; }
+      .pass { fill: #eaf7ec; stroke: #2f7d32; }
+      .review { fill: #fff4dc; stroke: #9b6500; }
+      .fail { fill: #fdecec; stroke: #b42318; }
+      .release { fill: #f1eefc; stroke: #6750a4; }
+      .line { fill: none; stroke: #4f6375; stroke-width: 3; marker-end: url(#arrow); }
+      .arrow-head { fill: #4f6375; }
+      .title { fill: #17212b; font: 700 28px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-anchor: middle; }
+      .section { fill: #435466; font: 700 16px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+      .heading { fill: #17212b; font: 700 19px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-anchor: middle; }
+      .body { fill: #334455; font: 14px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-anchor: middle; }
+      .small { fill: #526579; font: 13px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-anchor: middle; }
+      @media (prefers-color-scheme: dark) {
+        .canvas { fill: #111820; stroke: #3c4b5a; }
+        .box, .checks { fill: #18222d; stroke: #71859a; }
+        .central, .action { fill: #142c43; stroke: #72b7ff; }
+        .pass { fill: #17331f; stroke: #77c987; }
+        .review { fill: #3a2b13; stroke: #e6b85c; }
+        .fail { fill: #3d1e20; stroke: #ef8d8d; }
+        .release { fill: #29233d; stroke: #b9a7ec; }
+        .line { stroke: #a5b7c8; }
+        .arrow-head { fill: #a5b7c8; }
+        .title, .heading { fill: #edf3f8; }
+        .section, .body, .small { fill: #bfccd8; }
+      }
+    </style>
+  </defs>
+
+  <rect class="canvas" x="1" y="1" width="1198" height="928" rx="12" />
+  <text class="title" x="600" y="46">How a change moves through the contract layer</text>
+  <text class="section" x="32" y="78">Inputs</text>
+
+  <rect class="box" x="32" y="92" width="320" height="142" rx="8" />
+  <text class="heading" x="192" y="125">Provider repository</text>
+  <text class="body" x="192" y="154">
+    <tspan x="192" dy="0">Canonical API, protobuf, or CRD</tspan>
+    <tspan x="192" dy="23">Provider-native tests</tspan>
+    <tspan x="192" dy="23">.rhoai/contracts.yaml</tspan>
+  </text>
+
+  <rect class="central" x="440" y="92" width="320" height="142" rx="8" />
+  <text class="heading" x="600" y="125">api-contract-central</text>
+  <text class="body" x="600" y="154">
+    <tspan x="600" dy="0">Catalog pointers, policies, and baseline resolver</tspan>
+    <tspan x="600" dy="23">Approved compatibility modules</tspan>
+    <tspan x="600" dy="23">Runner, Action, and reporting</tspan>
+  </text>
+
+  <rect class="box" x="848" y="92" width="320" height="142" rx="8" />
+  <text class="heading" x="1008" y="125">Consumer repository</text>
+  <text class="body" x="1008" y="154">
+    <tspan x="1008" dy="0">Dashboard expectations and SHA pins</tspan>
+    <tspan x="1008" dy="23">Consumed behavior and fixtures</tspan>
+    <tspan x="1008" dy="23">Consumer-owned tests</tspan>
+  </text>
+
+  <path class="line" d="M 192 234 C 192 275, 400 260, 450 302" />
+  <path class="line" d="M 600 234 L 600 302" />
+  <path class="line" d="M 1008 234 C 1008 275, 800 260, 750 302" />
+
+  <text class="section" x="32" y="286">Provider pull request</text>
+  <rect class="action" x="330" y="304" width="540" height="106" rx="8" />
+  <text class="heading" x="600" y="334">Steps 1–3: Materialize trusted inputs</text>
+  <text class="body" x="600" y="360">
+    <tspan x="600" dy="0">1 Check out the prospective merge and generate the candidate</tspan>
+    <tspan x="600" dy="20">2 Verify it against the provider's declared generated artifact</tspan>
+    <tspan x="600" dy="20">3 Resolve protected baselines by full SHA or digest</tspan>
+  </text>
+
+  <path class="line" d="M 600 410 L 600 454" />
+  <path class="line" d="M 870 380 C 1080 390, 1140 530, 1000 638" />
+  <rect class="checks" x="330" y="456" width="540" height="112" rx="8" />
+  <text class="heading" x="600" y="492">Step 4: Prove compatibility</text>
+  <text class="body" x="600" y="521">
+    <tspan x="600" dy="0">Compare with latest accepted and all supported release snapshots</tspan>
+    <tspan x="600" dy="22">Require structural, behavior, upgrade, and consumer-profile results</tspan>
+  </text>
+
+  <text class="section" x="32" y="614">Steps 5–6: Enforce outcome</text>
+  <path class="line" d="M 600 568 C 600 600, 200 590, 200 638" />
+  <path class="line" d="M 600 568 L 600 638" />
+
+  <rect class="pass" x="32" y="640" width="336" height="104" rx="8" />
+  <text class="heading" x="200" y="674">Step 5: Compatible</text>
+  <text class="body" x="200" y="700">
+    <tspan x="200" dy="0">Additive or compatible change passes</tspan>
+    <tspan x="200" dy="20">Publish exact evidence</tspan>
+  </text>
+
+  <rect class="fail" x="432" y="640" width="336" height="104" rx="8" />
+  <text class="heading" x="600" y="674">Step 5: Breaking</text>
+  <text class="body" x="600" y="696">
+    <tspan x="600" dy="0">Breaking change fails</tspan>
+    <tspan x="600" dy="19">Fix it or enter the reviewed</tspan>
+    <tspan x="600" dy="19">intentional-change process</tspan>
+  </text>
+
+  <rect class="fail" x="832" y="640" width="336" height="104" rx="8" />
+  <text class="heading" x="1000" y="674">Step 6: Fail closed</text>
+  <text class="body" x="1000" y="696">
+    <tspan x="1000" dy="0">Generation, artifact, baseline,</tspan>
+    <tspan x="1000" dy="19">digest, or required-result error</tspan>
+  </text>
+
+  <text class="section" x="32" y="794">After merge: release flow</text>
+  <rect class="release" x="80" y="812" width="280" height="78" rx="8" />
+  <text class="heading" x="220" y="843">Pinned release matrix</text>
+  <text class="small" x="220" y="870">Provider + consumer + dependencies</text>
+
+  <path class="line" d="M 360 851 L 458 851" />
+  <rect class="release" x="460" y="812" width="280" height="78" rx="8" />
+  <text class="heading" x="600" y="843">Cross-component conformance</text>
+  <text class="small" x="600" y="870">Run workflows no single repo can prove</text>
+
+  <path class="line" d="M 740 851 L 838 851" />
+  <rect class="release" x="840" y="812" width="280" height="78" rx="8" />
+  <text class="heading" x="980" y="843">Product release evidence</text>
+  <text class="small" x="980" y="870">Exact supported versions and results</text>
+</svg>

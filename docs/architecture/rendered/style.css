@@ -1,0 +1,232 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --surface: #f6f8fa;
+  --surface-strong: #eaf2fb;
+  --text: #182230;
+  --muted: #52606d;
+  --border: #d8dee4;
+  --accent: #0066cc;
+  --accent-strong: #004b95;
+  --good: #207227;
+  --warning: #8a5300;
+  --code-bg: #eef1f4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11161d;
+    --surface: #181f28;
+    --surface-strong: #152a3d;
+    --text: #e7edf3;
+    --muted: #aab6c3;
+    --border: #34404d;
+    --accent: #73b8ff;
+    --accent-strong: #a7d3ff;
+    --good: #7bd389;
+    --warning: #f2c26b;
+    --code-bg: #1b2530;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+body > header,
+body > nav,
+body > main {
+  width: min(1120px, calc(100% - 40px));
+  margin-inline: auto;
+}
+
+body > header {
+  padding: 64px 0 28px;
+  border-bottom: 4px solid var(--accent);
+}
+
+header h1 {
+  max-width: 880px;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+header .subtitle {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 1.15rem;
+}
+
+#TOC {
+  margin-top: 24px;
+  padding: 18px 22px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+#TOC::before {
+  content: "Contents";
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+#TOC ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 4px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+main { padding: 28px 0 80px; }
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  transform: translateY(-160%);
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+h2 {
+  margin: 52px 0 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 1.75rem;
+  line-height: 1.25;
+}
+
+h3 {
+  margin: 34px 0 12px;
+  color: var(--accent-strong);
+  font-size: 1.25rem;
+}
+
+h4 { margin: 24px 0 8px; }
+
+p { max-width: 84ch; }
+
+a { color: var(--accent); text-underline-offset: 2px; }
+
+blockquote {
+  margin: 26px 0;
+  padding: 18px 22px;
+  border-left: 5px solid var(--accent);
+  background: var(--surface-strong);
+  font-size: 1.06rem;
+}
+
+blockquote p { margin: 0; }
+
+table {
+  display: block;
+  width: 100%;
+  margin: 18px 0 28px;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+}
+
+th, td {
+  min-width: 160px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+}
+
+th {
+  background: var(--surface);
+  font-weight: 700;
+}
+
+tr:nth-child(even) td { background: color-mix(in srgb, var(--surface) 55%, transparent); }
+
+code, pre {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+code {
+  padding: 0.12em 0.34em;
+  border-radius: 3px;
+  background: var(--code-bg);
+  font-size: 0.9em;
+}
+
+pre {
+  margin: 18px 0 28px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  line-height: 1.5;
+}
+
+pre code { padding: 0; background: transparent; }
+
+li { margin: 5px 0; }
+
+strong { color: var(--text); }
+
+.architecture-diagram {
+  width: 100%;
+  margin: 24px 0 32px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.architecture-diagram img {
+  display: block;
+  width: 100%;
+  min-width: 1080px;
+  height: auto;
+}
+
+.architecture-diagram figcaption {
+  min-width: 1080px;
+  padding: 10px 16px 14px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 700px) {
+  body > header,
+  body > nav,
+  body > main { width: min(100% - 24px, 1120px); }
+  body > header { padding-top: 36px; }
+  #TOC ul { display: block; }
+  th, td { min-width: 210px; }
+}
+
+@media print {
+  :root { color-scheme: light; }
+  body { font-size: 11pt; }
+  body > header, body > nav, body > main { width: 100%; }
+  #TOC { break-after: page; }
+  h2, h3 { break-after: avoid; }
+  pre, blockquote, table { break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+  .skip-link { display: none; }
+  .architecture-diagram img,
+  .architecture-diagram figcaption { min-width: 0; }
+}

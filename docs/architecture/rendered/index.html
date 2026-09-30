@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.10" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="RHOAI API Contract Working Group pilot architecture and delivery proposal" />
+  <title>RHOAI API Contract Working Group</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; }
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; }
+code span.at { color: #7d9029; }
+code span.bn { color: #40a070; }
+code span.bu { color: #008000; }
+code span.cf { color: #007020; font-weight: bold; }
+code span.ch { color: #4070a0; }
+code span.cn { color: #880000; }
+code span.co { color: #60a0b0; font-style: italic; }
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; }
+code span.do { color: #ba2121; font-style: italic; }
+code span.dt { color: #902000; }
+code span.dv { color: #40a070; }
+code span.er { color: #ff0000; font-weight: bold; }
+code span.ex { }
+code span.fl { color: #40a070; }
+code span.fu { color: #06287e; }
+code span.im { color: #008000; font-weight: bold; }
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; }
+code span.kw { color: #007020; font-weight: bold; }
+code span.op { color: #666666; }
+code span.ot { color: #007020; }
+code span.pp { color: #bc7a00; }
+code span.sc { color: #4070a0; }
+code span.ss { color: #bb6688; }
+code span.st { color: #4070a0; }
+code span.va { color: #19177c; }
+code span.vs { color: #4070a0; }
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
+</style>
+  <style type="text/css">:root {
+color-scheme: light dark;
+--bg: #ffffff;
+--surface: #f6f8fa;
+--surface-strong: #eaf2fb;
+--text: #182230;
+--muted: #52606d;
+--border: #d8dee4;
+--accent: #0066cc;
+--accent-strong: #004b95;
+--good: #207227;
+--warning: #8a5300;
+--code-bg: #eef1f4;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg: #11161d;
+--surface: #181f28;
+--surface-strong: #152a3d;
+--text: #e7edf3;
+--muted: #aab6c3;
+--border: #34404d;
+--accent: #73b8ff;
+--accent-strong: #a7d3ff;
+--good: #7bd389;
+--warning: #f2c26b;
+--code-bg: #1b2530;
+}
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+margin: 0;
+background: var(--bg);
+color: var(--text);
+font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+font-size: 16px;
+line-height: 1.65;
+}
+body > header,
+body > nav,
+body > main {
+width: min(1120px, calc(100% - 40px));
+margin-inline: auto;
+}
+body > header {
+padding: 64px 0 28px;
+border-bottom: 4px solid var(--accent);
+}
+header h1 {
+max-width: 880px;
+margin: 0;
+font-size: clamp(2rem, 5vw, 3.5rem);
+line-height: 1.08;
+letter-spacing: -0.035em;
+}
+header .subtitle {
+margin-top: 14px;
+color: var(--muted);
+font-size: 1.15rem;
+}
+#TOC {
+margin-top: 24px;
+padding: 18px 22px;
+border: 1px solid var(--border);
+background: var(--surface);
+}
+#TOC::before {
+content: "Contents";
+display: block;
+margin-bottom: 8px;
+font-weight: 700;
+color: var(--text);
+}
+#TOC ul {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+gap: 4px 24px;
+margin: 0;
+padding: 0;
+list-style: none;
+}
+main { padding: 28px 0 80px; }
+.skip-link {
+position: fixed;
+top: 8px;
+left: 8px;
+z-index: 10;
+padding: 8px 12px;
+background: var(--bg);
+border: 2px solid var(--accent);
+transform: translateY(-160%);
+}
+.skip-link:focus { transform: translateY(0); }
+h2 {
+margin: 52px 0 18px;
+padding-top: 12px;
+border-top: 1px solid var(--border);
+font-size: 1.75rem;
+line-height: 1.25;
+}
+h3 {
+margin: 34px 0 12px;
+color: var(--accent-strong);
+font-size: 1.25rem;
+}
+h4 { margin: 24px 0 8px; }
+p { max-width: 84ch; }
+a { color: var(--accent); text-underline-offset: 2px; }
+blockquote {
+margin: 26px 0;
+padding: 18px 22px;
+border-left: 5px solid var(--accent);
+background: var(--surface-strong);
+font-size: 1.06rem;
+}
+blockquote p { margin: 0; }
+table {
+display: block;
+width: 100%;
+margin: 18px 0 28px;
+overflow-x: auto;
+border-collapse: collapse;
+font-size: 0.94rem;
+}
+th, td {
+min-width: 160px;
+padding: 11px 13px;
+border: 1px solid var(--border);
+vertical-align: top;
+text-align: left;
+}
+th {
+background: var(--surface);
+font-weight: 700;
+}
+tr:nth-child(even) td { background: color-mix(in srgb, var(--surface) 55%, transparent); }
+code, pre {
+font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+code {
+padding: 0.12em 0.34em;
+border-radius: 3px;
+background: var(--code-bg);
+font-size: 0.9em;
+}
+pre {
+margin: 18px 0 28px;
+padding: 18px 20px;
+overflow-x: auto;
+border: 1px solid var(--border);
+background: var(--code-bg);
+line-height: 1.5;
+}
+pre code { padding: 0; background: transparent; }
+li { margin: 5px 0; }
+strong { color: var(--text); }
+.architecture-diagram {
+width: 100%;
+margin: 24px 0 32px;
+overflow-x: auto;
+border: 1px solid var(--border);
+background: var(--surface);
+}
+.architecture-diagram img {
+display: block;
+width: 100%;
+min-width: 1080px;
+height: auto;
+}
+.architecture-diagram figcaption {
+min-width: 1080px;
+padding: 10px 16px 14px;
+color: var(--muted);
+font-size: 0.88rem;
+}
+@media (max-width: 700px) {
+body > header,
+body > nav,
+body > main { width: min(100% - 24px, 1120px); }
+body > header { padding-top: 36px; }
+#TOC ul { display: block; }
+th, td { min-width: 210px; }
+}
+@media print {
+:root { color-scheme: light; }
+body { font-size: 11pt; }
+body > header, body > nav, body > main { width: 100%; }
+#TOC { break-after: page; }
+h2, h3 { break-after: avoid; }
+pre, blockquote, table { break-inside: avoid; }
+a { color: inherit; text-decoration: none; }
+.skip-link { display: none; }
+.architecture-diagram img,
+.architecture-diagram figcaption { min-width: 0; }
+}
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header id="title-block-header">
+    <h1 class="title">RHOAI API Contract Working Group</h1>
+    <p class="subtitle">Pilot architecture and delivery proposal for
+api-contract-central</p>
+  </header>
+  <nav id="TOC" role="doc-toc" aria-label="Table of contents">
+    <ul>
+    <li><a href="#architecture-in-plain-english" id="toc-architecture-in-plain-english">Architecture in Plain
+    English</a></li>
+    <li><a href="#end-to-end-flow" id="toc-end-to-end-flow">End-to-End
+    Flow</a></li>
+    <li><a href="#a-concrete-example-opendatahub-operator" id="toc-a-concrete-example-opendatahub-operator">A Concrete Example:
+    <code>opendatahub-operator</code></a></li>
+    <li><a href="#historical-evidence-expected-earlier-detection" id="toc-historical-evidence-expected-earlier-detection">Historical
+    Evidence: Expected Earlier Detection</a></li>
+    <li><a href="#v1-scope" id="toc-v1-scope">V1 Scope</a></li>
+    <li><a href="#ownership-model" id="toc-ownership-model">Ownership
+    Model</a></li>
+    <li><a href="#modular-api-contract-central" id="toc-modular-api-contract-central">Modular
+    <code>api-contract-central</code></a></li>
+    <li><a href="#simple-team-onboarding" id="toc-simple-team-onboarding">Simple Team Onboarding</a></li>
+    <li><a href="#pilot-cohort" id="toc-pilot-cohort">Pilot
+    Cohort</a></li>
+    <li><a href="#external-dependency-adoption" id="toc-external-dependency-adoption">External Dependency
+    Adoption</a></li>
+    <li><a href="#enforcement-and-intentional-change" id="toc-enforcement-and-intentional-change">Enforcement and
+    Intentional Change</a></li>
+    <li><a href="#proposed-two-week-thin-slice" id="toc-proposed-two-week-thin-slice">Proposed Two-Week Thin
+    Slice</a></li>
+    <li><a href="#pilot-success-measures" id="toc-pilot-success-measures">Pilot Success Measures</a></li>
+    <li><a href="#initial-roles-and-open-decisions" id="toc-initial-roles-and-open-decisions">Initial Roles and Open
+    Decisions</a></li>
+    <li><a href="#guardrails" id="toc-guardrails">Guardrails</a></li>
+    <li><a href="#sources" id="toc-sources">Sources</a></li>
+    </ul>
+  </nav>
+  <main id="main-content">
+    <p><strong>Status:</strong> Working-group proposal<br />
+    <strong>Working repository name:</strong>
+    <code>api-contract-central</code><br />
+    <strong>Updated:</strong> 2026-09-28</p>
+    <blockquote>
+    <p><strong>Charter:</strong> Help RHOAI component teams own
+    compatibility guarantees for the APIs they expose, and detect
+    incompatible changes before broad integration or release validation
+    finds them late.</p>
+    </blockquote>
+    <h2 id="architecture-in-plain-english">Architecture in Plain
+    English</h2>
+    <p>Think of <code>api-contract-central</code> as a shared toolbox
+    and address book, not a warehouse for API specifications.</p>
+    <ul>
+    <li>Each component team keeps its real API definition and provider
+    tests in its own repository.</li>
+    <li>Dashboard and other consumers record the specific behavior they
+    depend on in their repositories.</li>
+    <li>The central repository records where those artifacts live and
+    supplies common checks.</li>
+    <li>A small GitHub Action runs those checks in the component&#39;s pull
+    request.</li>
+    <li>If a change is compatible, the pull request proceeds.</li>
+    <li>If a change is unexpectedly incompatible, the pull request fails
+    with a useful explanation.</li>
+    <li>If a break is intentional, the owner supplies a reviewed
+    migration or deprecation plan.</li>
+    <li>A separate release job tests exact component versions together
+    when one repository cannot prove the full behavior alone.</li>
+    </ul>
+    <p>The important boundary is ownership: the component team owns the
+    promise its API makes. The working group owns the shared rules and
+    tooling. Dashboard is a named consumer, not the default owner of
+    proving every provider API is safe.</p>
+    <h2 id="end-to-end-flow">End-to-End Flow</h2>
+    <figure class="architecture-diagram">
+      <img role="img" aria-label="The provider pull-request gate checks out the change, generates and validates a candidate contract, retrieves protected baselines, compares structure and behavior, and then passes compatible changes or fails breaking and integrity drift. Released versions then enter supported-matrix conformance." src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDkzMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9ImRpYWdyYW0tdGl0bGUgZGlhZ3JhbS1kZXNjcmlwdGlvbiI+CiAgPHRpdGxlIGlkPSJkaWFncmFtLXRpdGxlIj5TaXgtc3RlcCBSSE9BSSBBUEkgY29udHJhY3QgcHVsbC1yZXF1ZXN0IGdhdGUgYW5kIHJlbGVhc2UgZmxvdzwvdGl0bGU+CiAgPGRlc2MgaWQ9ImRpYWdyYW0tZGVzY3JpcHRpb24iPlRoZSBnYXRlIGNoZWNrcyBvdXQgdGhlIHByb3NwZWN0aXZlIG1lcmdlLCBnZW5lcmF0ZXMgYW5kIHZhbGlkYXRlcyBhIGNhbmRpZGF0ZSBjb250cmFjdCwgcmV0cmlldmVzIHByb3RlY3RlZCBiYXNlbGluZXMsIGNvbXBhcmVzIHN0cnVjdHVyZSBhbmQgYmVoYXZpb3IsIHBhc3NlcyBjb21wYXRpYmxlIGNoYW5nZXMsIGFuZCBmYWlscyBicmVha2luZyBvciBpbnRlZ3JpdHkgZHJpZnQuIFJlbGVhc2VkIHZlcnNpb25zIHRoZW4gcnVuIHRocm91Z2ggc3VwcG9ydGVkLW1hdHJpeCBjb25mb3JtYW5jZS48L2Rlc2M+CiAgPGRlZnM+CiAgICA8bWFya2VyIGlkPSJhcnJvdyIgdmlld0JveD0iMCAwIDEwIDEwIiByZWZYPSI4IiByZWZZPSI1IiBtYXJrZXJXaWR0aD0iOCIgbWFya2VySGVpZ2h0PSI4IiBvcmllbnQ9ImF1dG8tc3RhcnQtcmV2ZXJzZSI+CiAgICAgIDxwYXRoIGQ9Ik0gMCAwIEwgMTAgNSBMIDAgMTAgeiIgY2xhc3M9ImFycm93LWhlYWQiIC8+CiAgICA8L21hcmtlcj4KICAgIDxzdHlsZT4KICAgICAgLmNhbnZhcyB7IGZpbGw6ICNmN2Y5ZmI7IHN0cm9rZTogI2M4ZDFkYzsgc3Ryb2tlLXdpZHRoOiAyOyB9CiAgICAgIC5ib3ggeyBmaWxsOiAjZmZmZmZmOyBzdHJva2U6ICM2NTc3ODk7IHN0cm9rZS13aWR0aDogMjsgfQogICAgICAuY2VudHJhbCB7IGZpbGw6ICNlN2YyZmY7IHN0cm9rZTogIzAwNjZjYzsgfQogICAgICAuYWN0aW9uIHsgZmlsbDogI2U3ZjJmZjsgc3Ryb2tlOiAjMDA2NmNjOyBzdHJva2Utd2lkdGg6IDM7IH0KICAgICAgLmNoZWNrcyB7IGZpbGw6ICNmZmZmZmY7IHN0cm9rZTogIzAwNjZjYzsgc3Ryb2tlLXdpZHRoOiAzOyB9CiAgICAgIC5wYXNzIHsgZmlsbDogI2VhZjdlYzsgc3Ryb2tlOiAjMmY3ZDMyOyB9CiAgICAgIC5yZXZpZXcgeyBmaWxsOiAjZmZmNGRjOyBzdHJva2U6ICM5YjY1MDA7IH0KICAgICAgLmZhaWwgeyBmaWxsOiAjZmRlY2VjOyBzdHJva2U6ICNiNDIzMTg7IH0KICAgICAgLnJlbGVhc2UgeyBmaWxsOiAjZjFlZWZjOyBzdHJva2U6ICM2NzUwYTQ7IH0KICAgICAgLmxpbmUgeyBmaWxsOiBub25lOyBzdHJva2U6ICM0ZjYzNzU7IHN0cm9rZS13aWR0aDogMzsgbWFya2VyLWVuZDogdXJsKCNhcnJvdyk7IH0KICAgICAgLmFycm93LWhlYWQgeyBmaWxsOiAjNGY2Mzc1OyB9CiAgICAgIC50aXRsZSB7IGZpbGw6ICMxNzIxMmI7IGZvbnQ6IDcwMCAyOHB4IEludGVyLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIHNhbnMtc2VyaWY7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0KICAgICAgLnNlY3Rpb24geyBmaWxsOiAjNDM1NDY2OyBmb250OiA3MDAgMTZweCBJbnRlciwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBzYW5zLXNlcmlmOyBsZXR0ZXItc3BhY2luZzogMXB4OyB0ZXh0LXRyYW5zZm9ybTogdXBwZXJjYXNlOyB9CiAgICAgIC5oZWFkaW5nIHsgZmlsbDogIzE3MjEyYjsgZm9udDogNzAwIDE5cHggSW50ZXIsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgc2Fucy1zZXJpZjsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQogICAgICAuYm9keSB7IGZpbGw6ICMzMzQ0NTU7IGZvbnQ6IDE0cHggSW50ZXIsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgc2Fucy1zZXJpZjsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQogICAgICAuc21hbGwgeyBmaWxsOiAjNTI2NTc5OyBmb250OiAxM3B4IEludGVyLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIHNhbnMtc2VyaWY7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0KICAgICAgQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgICAgIC5jYW52YXMgeyBmaWxsOiAjMTExODIwOyBzdHJva2U6ICMzYzRiNWE7IH0KICAgICAgICAuYm94LCAuY2hlY2tzIHsgZmlsbDogIzE4MjIyZDsgc3Ryb2tlOiAjNzE4NTlhOyB9CiAgICAgICAgLmNlbnRyYWwsIC5hY3Rpb24geyBmaWxsOiAjMTQyYzQzOyBzdHJva2U6ICM3MmI3ZmY7IH0KICAgICAgICAucGFzcyB7IGZpbGw6ICMxNzMzMWY7IHN0cm9rZTogIzc3Yzk4NzsgfQogICAgICAgIC5yZXZpZXcgeyBmaWxsOiAjM2EyYjEzOyBzdHJva2U6ICNlNmI4NWM7IH0KICAgICAgICAuZmFpbCB7IGZpbGw6ICMzZDFlMjA7IHN0cm9rZTogI2VmOGQ4ZDsgfQogICAgICAgIC5yZWxlYXNlIHsgZmlsbDogIzI5MjMzZDsgc3Ryb2tlOiAjYjlhN2VjOyB9CiAgICAgICAgLmxpbmUgeyBzdHJva2U6ICNhNWI3Yzg7IH0KICAgICAgICAuYXJyb3ctaGVhZCB7IGZpbGw6ICNhNWI3Yzg7IH0KICAgICAgICAudGl0bGUsIC5oZWFkaW5nIHsgZmlsbDogI2VkZjNmODsgfQogICAgICAgIC5zZWN0aW9uLCAuYm9keSwgLnNtYWxsIHsgZmlsbDogI2JmY2NkODsgfQogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KCiAgPHJlY3QgY2xhc3M9ImNhbnZhcyIgeD0iMSIgeT0iMSIgd2lkdGg9IjExOTgiIGhlaWdodD0iOTI4IiByeD0iMTIiIC8+CiAgPHRleHQgY2xhc3M9InRpdGxlIiB4PSI2MDAiIHk9IjQ2Ij5Ib3cgYSBjaGFuZ2UgbW92ZXMgdGhyb3VnaCB0aGUgY29udHJhY3QgbGF5ZXI8L3RleHQ+CiAgPHRleHQgY2xhc3M9InNlY3Rpb24iIHg9IjMyIiB5PSI3OCI+SW5wdXRzPC90ZXh0PgoKICA8cmVjdCBjbGFzcz0iYm94IiB4PSIzMiIgeT0iOTIiIHdpZHRoPSIzMjAiIGhlaWdodD0iMTQyIiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iMTkyIiB5PSIxMjUiPlByb3ZpZGVyIHJlcG9zaXRvcnk8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjE5MiIgeT0iMTU0Ij4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIwIj5DYW5vbmljYWwgQVBJLCBwcm90b2J1Ziwgb3IgQ1JEPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIyMyI+UHJvdmlkZXItbmF0aXZlIHRlc3RzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIyMyI+LnJob2FpL2NvbnRyYWN0cy55YW1sPC90c3Bhbj4KICA8L3RleHQ+CgogIDxyZWN0IGNsYXNzPSJjZW50cmFsIiB4PSI0NDAiIHk9IjkyIiB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE0MiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iMTI1Ij5hcGktY29udHJhY3QtY2VudHJhbDwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iNjAwIiB5PSIxNTQiPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjAiPkNhdGFsb2cgcG9pbnRlcnMsIHBvbGljaWVzLCBhbmQgYmFzZWxpbmUgcmVzb2x2ZXI8L3RzcGFuPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjIzIj5BcHByb3ZlZCBjb21wYXRpYmlsaXR5IG1vZHVsZXM8L3RzcGFuPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjIzIj5SdW5uZXIsIEFjdGlvbiwgYW5kIHJlcG9ydGluZzwvdHNwYW4+CiAgPC90ZXh0PgoKICA8cmVjdCBjbGFzcz0iYm94IiB4PSI4NDgiIHk9IjkyIiB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE0MiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjEwMDgiIHk9IjEyNSI+Q29uc3VtZXIgcmVwb3NpdG9yeTwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iMTAwOCIgeT0iMTU0Ij4KICAgIDx0c3BhbiB4PSIxMDA4IiBkeT0iMCI+RGFzaGJvYXJkIGV4cGVjdGF0aW9ucyBhbmQgU0hBIHBpbnM8L3RzcGFuPgogICAgPHRzcGFuIHg9IjEwMDgiIGR5PSIyMyI+Q29uc3VtZWQgYmVoYXZpb3IgYW5kIGZpeHR1cmVzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxMDA4IiBkeT0iMjMiPkNvbnN1bWVyLW93bmVkIHRlc3RzPC90c3Bhbj4KICA8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDE5MiAyMzQgQyAxOTIgMjc1LCA0MDAgMjYwLCA0NTAgMzAyIiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDYwMCAyMzQgTCA2MDAgMzAyIiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDEwMDggMjM0IEMgMTAwOCAyNzUsIDgwMCAyNjAsIDc1MCAzMDIiIC8+CgogIDx0ZXh0IGNsYXNzPSJzZWN0aW9uIiB4PSIzMiIgeT0iMjg2Ij5Qcm92aWRlciBwdWxsIHJlcXVlc3Q8L3RleHQ+CiAgPHJlY3QgY2xhc3M9ImFjdGlvbiIgeD0iMzMwIiB5PSIzMDQiIHdpZHRoPSI1NDAiIGhlaWdodD0iMTA2IiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iNjAwIiB5PSIzMzQiPlN0ZXBzIDHigJMzOiBNYXRlcmlhbGl6ZSB0cnVzdGVkIGlucHV0czwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iNjAwIiB5PSIzNjAiPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjAiPjEgQ2hlY2sgb3V0IHRoZSBwcm9zcGVjdGl2ZSBtZXJnZSBhbmQgZ2VuZXJhdGUgdGhlIGNhbmRpZGF0ZTwvdHNwYW4+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMjAiPjIgVmVyaWZ5IGl0IGFnYWluc3QgdGhlIHByb3ZpZGVyJ3MgZGVjbGFyZWQgZ2VuZXJhdGVkIGFydGlmYWN0PC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIyMCI+MyBSZXNvbHZlIHByb3RlY3RlZCBiYXNlbGluZXMgYnkgZnVsbCBTSEEgb3IgZGlnZXN0PC90c3Bhbj4KICA8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDYwMCA0MTAgTCA2MDAgNDU0IiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDg3MCAzODAgQyAxMDgwIDM5MCwgMTE0MCA1MzAsIDEwMDAgNjM4IiAvPgogIDxyZWN0IGNsYXNzPSJjaGVja3MiIHg9IjMzMCIgeT0iNDU2IiB3aWR0aD0iNTQwIiBoZWlnaHQ9IjExMiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iNDkyIj5TdGVwIDQ6IFByb3ZlIGNvbXBhdGliaWxpdHk8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjYwMCIgeT0iNTIxIj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIwIj5Db21wYXJlIHdpdGggbGF0ZXN0IGFjY2VwdGVkIGFuZCBhbGwgc3VwcG9ydGVkIHJlbGVhc2Ugc25hcHNob3RzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIyMiI+UmVxdWlyZSBzdHJ1Y3R1cmFsLCBiZWhhdmlvciwgdXBncmFkZSwgYW5kIGNvbnN1bWVyLXByb2ZpbGUgcmVzdWx0czwvdHNwYW4+CiAgPC90ZXh0PgoKICA8dGV4dCBjbGFzcz0ic2VjdGlvbiIgeD0iMzIiIHk9IjYxNCI+U3RlcHMgNeKAkzY6IEVuZm9yY2Ugb3V0Y29tZTwvdGV4dD4KICA8cGF0aCBjbGFzcz0ibGluZSIgZD0iTSA2MDAgNTY4IEMgNjAwIDYwMCwgMjAwIDU5MCwgMjAwIDYzOCIgLz4KICA8cGF0aCBjbGFzcz0ibGluZSIgZD0iTSA2MDAgNTY4IEwgNjAwIDYzOCIgLz4KCiAgPHJlY3QgY2xhc3M9InBhc3MiIHg9IjMyIiB5PSI2NDAiIHdpZHRoPSIzMzYiIGhlaWdodD0iMTA0IiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iMjAwIiB5PSI2NzQiPlN0ZXAgNTogQ29tcGF0aWJsZTwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iMjAwIiB5PSI3MDAiPgogICAgPHRzcGFuIHg9IjIwMCIgZHk9IjAiPkFkZGl0aXZlIG9yIGNvbXBhdGlibGUgY2hhbmdlIHBhc3NlczwvdHNwYW4+CiAgICA8dHNwYW4geD0iMjAwIiBkeT0iMjAiPlB1Ymxpc2ggZXhhY3QgZXZpZGVuY2U8L3RzcGFuPgogIDwvdGV4dD4KCiAgPHJlY3QgY2xhc3M9ImZhaWwiIHg9IjQzMiIgeT0iNjQwIiB3aWR0aD0iMzM2IiBoZWlnaHQ9IjEwNCIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iNjc0Ij5TdGVwIDU6IEJyZWFraW5nPC90ZXh0PgogIDx0ZXh0IGNsYXNzPSJib2R5IiB4PSI2MDAiIHk9IjY5NiI+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMCI+QnJlYWtpbmcgY2hhbmdlIGZhaWxzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIxOSI+Rml4IGl0IG9yIGVudGVyIHRoZSByZXZpZXdlZDwvdHNwYW4+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMTkiPmludGVudGlvbmFsLWNoYW5nZSBwcm9jZXNzPC90c3Bhbj4KICA8L3RleHQ+CgogIDxyZWN0IGNsYXNzPSJmYWlsIiB4PSI4MzIiIHk9IjY0MCIgd2lkdGg9IjMzNiIgaGVpZ2h0PSIxMDQiIHJ4PSI4IiAvPgogIDx0ZXh0IGNsYXNzPSJoZWFkaW5nIiB4PSIxMDAwIiB5PSI2NzQiPlN0ZXAgNjogRmFpbCBjbG9zZWQ8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjEwMDAiIHk9IjY5NiI+CiAgICA8dHNwYW4geD0iMTAwMCIgZHk9IjAiPkdlbmVyYXRpb24sIGFydGlmYWN0LCBiYXNlbGluZSw8L3RzcGFuPgogICAgPHRzcGFuIHg9IjEwMDAiIGR5PSIxOSI+ZGlnZXN0LCBvciByZXF1aXJlZC1yZXN1bHQgZXJyb3I8L3RzcGFuPgogIDwvdGV4dD4KCiAgPHRleHQgY2xhc3M9InNlY3Rpb24iIHg9IjMyIiB5PSI3OTQiPkFmdGVyIG1lcmdlOiByZWxlYXNlIGZsb3c8L3RleHQ+CiAgPHJlY3QgY2xhc3M9InJlbGVhc2UiIHg9IjgwIiB5PSI4MTIiIHdpZHRoPSIyODAiIGhlaWdodD0iNzgiIHJ4PSI4IiAvPgogIDx0ZXh0IGNsYXNzPSJoZWFkaW5nIiB4PSIyMjAiIHk9Ijg0MyI+UGlubmVkIHJlbGVhc2UgbWF0cml4PC90ZXh0PgogIDx0ZXh0IGNsYXNzPSJzbWFsbCIgeD0iMjIwIiB5PSI4NzAiPlByb3ZpZGVyICsgY29uc3VtZXIgKyBkZXBlbmRlbmNpZXM8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDM2MCA4NTEgTCA0NTggODUxIiAvPgogIDxyZWN0IGNsYXNzPSJyZWxlYXNlIiB4PSI0NjAiIHk9IjgxMiIgd2lkdGg9IjI4MCIgaGVpZ2h0PSI3OCIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iODQzIj5Dcm9zcy1jb21wb25lbnQgY29uZm9ybWFuY2U8L3RleHQ+CiAgPHRleHQgY2xhc3M9InNtYWxsIiB4PSI2MDAiIHk9Ijg3MCI+UnVuIHdvcmtmbG93cyBubyBzaW5nbGUgcmVwbyBjYW4gcHJvdmU8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDc0MCA4NTEgTCA4MzggODUxIiAvPgogIDxyZWN0IGNsYXNzPSJyZWxlYXNlIiB4PSI4NDAiIHk9IjgxMiIgd2lkdGg9IjI4MCIgaGVpZ2h0PSI3OCIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9Ijk4MCIgeT0iODQzIj5Qcm9kdWN0IHJlbGVhc2UgZXZpZGVuY2U8L3RleHQ+CiAgPHRleHQgY2xhc3M9InNtYWxsIiB4PSI5ODAiIHk9Ijg3MCI+RXhhY3Qgc3VwcG9ydGVkIHZlcnNpb25zIGFuZCByZXN1bHRzPC90ZXh0Pgo8L3N2Zz4K" alt="The provider pull-request gate checks out the change, generates and validates a candidate contract, retrieves protected baselines, compares structure and behavior, and then passes compatible changes or fails breaking and integrity drift. Released versions then enter supported-matrix conformance." />
+      <figcaption>The central repository supplies tooling and orchestration; it does not copy the provider&#39;s canonical contract.</figcaption>
+    </figure>
+
+    <h3 id="the-six-step-provider-pull-request-gate">The six-step
+    provider pull-request gate</h3>
+    <blockquote>
+    <p><strong>Required invariant:</strong> CI compares a freshly
+    generated candidate from the pull request with trusted baselines
+    outside that pull request&#39;s control. It never compares two artifacts
+    that the same pull request can silently move together.</p>
+    </blockquote>
+    <ol type="1">
+    <li><strong>Check out the change.</strong> Test the exact
+    prospective merge commit, not an arbitrary developer workspace.</li>
+    <li><strong>Generate the candidate.</strong> Run a pinned, approved
+    adapter against the pull-request source to produce a normalized
+    OpenAPI document, protobuf descriptor, CRD bundle, or equivalent
+    contract.</li>
+    <li><strong>Retrieve protected baselines.</strong> Resolve the
+    latest accepted target-branch snapshot, every applicable
+    supported-release snapshot, and relevant consumer pins by full Git
+    SHA or artifact digest. Resolve policy, module versions, and
+    baseline rules from protected configuration.</li>
+    <li><strong>Compare structure and behavior.</strong> Compare the
+    candidate with every required baseline, verify it matches any
+    committed generated artifact, and require the applicable provider
+    behavior, upgrade, and consumer-profile results.</li>
+    <li><strong>Fail prohibited breaks.</strong> Removed or narrowed
+    behavior and any other breaking finding under the active
+    support-level policy fails CI. Compatible additive changes pass this
+    step.</li>
+    <li><strong>Fail closed on integrity drift.</strong> Missing or
+    failed generation, a generated/committed mismatch, an unresolved
+    baseline, a digest mismatch, or missing/malformed required behavior
+    results also fails CI.</li>
+    </ol>
+    <p>The Action publishes the exact candidate digest, baseline SHAs or
+    digests, policy, modules, affected consumers, evidence, and
+    remediation. In enforcement mode, the author must either make the
+    change compatible or complete the separately reviewed
+    intentional-change process before the gate can pass. Report-only
+    mode is permitted only during onboarding.</p>
+    <p>After merge, a trusted workflow publishes the accepted contract
+    as a new immutable snapshot. Released component versions separately
+    enter cross-component conformance against the supported RHOAI
+    matrix.</p>
+    <h3 id="why-this-catches-the-important-cases">Why this catches the
+    important cases</h3>
+    <table>
+    <thead>
+    <tr>
+    <th>Team action</th>
+    <th>Gate result</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>Changes implementation and generated contract</td>
+    <td>The candidate still differs from the older protected baselines;
+    a prohibited break fails.</td>
+    </tr>
+    <tr>
+    <td>Changes implementation but leaves a generated artifact
+    stale</td>
+    <td>Fresh generation differs from the committed artifact; integrity
+    drift fails.</td>
+    </tr>
+    <tr>
+    <td>Attempts to advance the baseline in the same pull request</td>
+    <td>The gate uses protected target-branch and release configuration,
+    so the attempted move cannot make that pull request pass.</td>
+    </tr>
+    <tr>
+    <td>Changes runtime semantics not represented by the schema</td>
+    <td>Required provider behavior, upgrade, and consumer-profile checks
+    provide the additional signal. Untested semantics remain an explicit
+    coverage gap.</td>
+    </tr>
+    </tbody>
+    </table>
+    <h2 id="a-concrete-example-opendatahub-operator">A Concrete Example:
+    <code>opendatahub-operator</code></h2>
+    <p>Think of the central repository as an inspection kit installed in
+    each provider repository. The provider owns the building; Dashboard
+    supplies a usage example; the Action inspects before merge.</p>
+    <p><a href="https://redhat.atlassian.net/browse/RHOAIENG-88550"><code>RHOAIENG-88550</code></a>
+    was discovered after Dashboard tried to create a
+    <code>Dashboard</code> custom resource containing
+    <code>spec.deploymentMode</code>. The published CRD schema did not
+    contain that field, the resource was rejected, and the DSC stayed
+    NotReady. Dashboard Cypress found a real provider contract problem,
+    but only after the components had been assembled in an integration
+    environment.</p>
+    <p>Under this proposal:</p>
+    <ol type="1">
+    <li>The <code>opendatahub-operator</code> pull request invokes the
+    shared Action.</li>
+    <li>The Action generates the candidate CRD from that exact
+    pull-request source and verifies any committed generated CRD is
+    current.</li>
+    <li>It retrieves the protected accepted and supported-release
+    baselines.</li>
+    <li>A Dashboard-owned consumer fixture supplies the
+    <code>Dashboard</code> resource shape it relies on, including
+    <code>spec.deploymentMode</code>.</li>
+    <li>Provider-owned envtest installs the candidate CRD and submits,
+    round-trips, and reconciles that fixture. A candidate schema that
+    omits the consumed field rejects it, so the provider PR fails.</li>
+    <li>The team fixes the schema or completes an intentional versioned
+    migration before merging. The framework catches and explains the
+    problem; it does not automatically fix it.</li>
+    </ol>
+    <pre class="text"><code>Today:    provider change -&gt; integration deployment -&gt; Dashboard Cypress fails late
+Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; provider CI fails early</code></pre>
+    <h2 id="historical-evidence-expected-earlier-detection">Historical
+    Evidence: Expected Earlier Detection</h2>
+    <p>The <a href="../../research/dashboard-integration-gap-analysis.html">2026-08-31
+    Dashboard Integration Gap Analysis</a> reviewed 194
+    <code>cypress_found_bug</code> issues and classified 132 as upstream
+    component bugs. The 17 examples below use its symptoms, detection
+    layers, and confidence ratings.</p>
+    <blockquote>
+    <p><strong>Evidence boundary:</strong> These are expected detection
+    paths, not proof from replaying the original commits. Schema diffing
+    alone would not catch every case: runtime semantics need required
+    provider tests, while genuinely cross-component behavior stays in
+    central release conformance.</p>
+    </blockquote>
+    <table>
+    <thead>
+    <tr>
+    <th>Historical issue</th>
+    <th>Owning provider/profile</th>
+    <th>What broke</th>
+    <th>Required detector in this design</th>
+    <th>Failure point</th>
+    <th>Audit confidence</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-88550">RHOAIENG-88550</a></td>
+    <td><code>opendatahub-operator</code></td>
+    <td><code>deploymentMode</code> rejected by the Dashboard CRD</td>
+    <td>Candidate CRD admission plus Dashboard CR fixture</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-88547">RHOAIENG-88547</a></td>
+    <td><code>opendatahub-operator</code></td>
+    <td>Model Registry provisioning left the DSC NotReady</td>
+    <td>Bootstrap-from-empty and reconciler-order envtest</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-87949">RHOAIENG-87949</a></td>
+    <td><code>workbenches-operator</code></td>
+    <td>Notebook could not start on 3.6 EA1</td>
+    <td>Dashboard-created Notebook fixture through webhook and
+    reconciliation</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-87649">RHOAIENG-87649</a></td>
+    <td><code>model-registry-operator</code></td>
+    <td>Model Catalog pods absent after fresh install</td>
+    <td>Bootstrap-from-empty to expected pods and Ready state</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-85499">RHOAIENG-85499</a></td>
+    <td><code>opendatahub-operator</code></td>
+    <td>Deferred DSC apply blocked by provisioning order</td>
+    <td>Reconciler dependency-order envtest</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-82376">RHOAIENG-82376</a></td>
+    <td><code>odh-model-controller</code></td>
+    <td>Controller CrashLoop from missing OpenShift API RBAC</td>
+    <td>Manager startup as a restricted SA using shipped RBAC</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-83128">RHOAIENG-83128</a></td>
+    <td><code>feast-module-operator</code></td>
+    <td>Controller forbidden from reading Notebook resources</td>
+    <td>Manager startup as a restricted SA using shipped RBAC</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-75788">RHOAIENG-75788</a></td>
+    <td><code>model-registry-operator</code></td>
+    <td>A PR removed required RBAC list/watch verbs</td>
+    <td>Shipped-RBAC diff plus restricted manager startup</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-78053">RHOAIENG-78053</a></td>
+    <td><code>model-registry-operator</code></td>
+    <td>Finalizer blocked InferenceService deletion</td>
+    <td>Adverse deletion-order and termination envtest</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-78060">RHOAIENG-78060</a></td>
+    <td><code>opendatahub-operator</code></td>
+    <td>TrustyAI never requeued when a dependency CRD appeared</td>
+    <td>Delayed-CRD requeue and self-heal envtest</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-78567">RHOAIENG-78567</a></td>
+    <td>KServe installation profile</td>
+    <td>KServe CRDs absent on a fresh cluster</td>
+    <td>Empty-cluster CRD install and ordering test</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-78659">RHOAIENG-78659</a></td>
+    <td><code>kserve</code></td>
+    <td>CRD admission rejected a production value</td>
+    <td>Candidate CRD plus real-value admission fixture</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-76563">RHOAIENG-76563</a></td>
+    <td><code>model-registry-operator</code></td>
+    <td>AITenant finalizer deadlocked termination</td>
+    <td>Finalizer deletion-order and termination envtest</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-88591">RHOAIENG-88591</a></td>
+    <td><code>feast-module-operator</code></td>
+    <td>Created namespace missed a required label</td>
+    <td>Label-propagation envtest plus consumer expectation</td>
+    <td>Provider PR</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-79036">RHOAIENG-79036</a></td>
+    <td>Operator + Workbenches profile</td>
+    <td>DSC could not find <code>odh-workbenches-config</code></td>
+    <td>Pinned cross-component dependency fixture</td>
+    <td>Central conformance</td>
+    <td>High</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-79593">RHOAIENG-79593</a></td>
+    <td>Workbenches + platform operators</td>
+    <td>Duplicate Notebook webhook registration</td>
+    <td>Webhook collision policy plus multi-operator fixture</td>
+    <td>Central conformance</td>
+    <td>Low</td>
+    </tr>
+    <tr>
+    <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-80043">RHOAIENG-80043</a></td>
+    <td>MaaS + Kuadrant profile</td>
+    <td>EnvoyFilters leaked onto Dashboard gateway and caused 401s</td>
+    <td>Scoping policy plus pinned multi-gateway fixture</td>
+    <td>Central conformance</td>
+    <td>Low</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>Repeated incidents strengthen the case for reusable provider
+    checks: <code>RHOAIENG-66476</code> repeated the Model Registry
+    finalizer pattern, <code>RHOAIENG-77786</code> repeated the TrustyAI
+    requeue pattern, and <code>RHOAIENG-79331</code> repeated the Feast
+    RBAC pattern. The Model Registry rows above concern
+    <code>model-registry-operator</code>; the
+    <code>model-registry</code> HTTP/OpenAPI pilot still needs a seeded
+    removed- operation or removed-field replay before claiming
+    equivalent evidence.</p>
+    <h2 id="v1-scope">V1 Scope</h2>
+    <table>
+    <thead>
+    <tr>
+    <th>Contract type</th>
+    <th>V1 covers</th>
+    <th>Typical evidence</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>HTTP or gRPC service API</td>
+    <td>Operations, messages, fields, defaults, status/error semantics,
+    and authorization behavior</td>
+    <td>OpenAPI, protobuf, runtime provider tests</td>
+    </tr>
+    <tr>
+    <td>Kubernetes API and operator behavior</td>
+    <td>CRD versions, schema, defaulting, validation, conversion,
+    reconciliation, status, and upgrades</td>
+    <td>CRDs, N-1 fixtures, envtest/e2e results</td>
+    </tr>
+    <tr>
+    <td>Cross-repository behavior</td>
+    <td>A workflow whose guarantee spans a provider, consumer, or
+    external controller</td>
+    <td>Pinned conformance profile and release matrix</td>
+    </tr>
+    <tr>
+    <td>External dependency adoption</td>
+    <td>Supported version range and behavior RHOAI relies on when
+    adopting an upstream release</td>
+    <td>Adapter suite, dependency lock, named DRI</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>Do not include every internal endpoint in V1. Start with
+    supported interfaces consumed across a repository boundary.</p>
+    <h3 id="what-counts-as-breaking">What counts as breaking</h3>
+    <p>A change is potentially breaking when it:</p>
+    <ul>
+    <li>Removes or renames an operation, message, field, API version, or
+    endpoint.</li>
+    <li>Narrows an accepted input or adds an incompatible required
+    field, enum, or validation.</li>
+    <li>Changes defaults, error/status semantics, or authorization
+    behavior relied on by a consumer.</li>
+    <li>Breaks CRD conversion, round-trip preservation, reconciliation,
+    readiness, or an upgrade path.</li>
+    <li>Moves a dependency outside its declared supported range or
+    breaks its adapter conformance.</li>
+    </ul>
+    <p>The checks detect changes. The API&#39;s support level and policy
+    decide whether a detected change is forbidden, warning-only, or
+    allowed with an approved migration plan.</p>
+    <h2 id="ownership-model">Ownership Model</h2>
+    <table>
+    <thead>
+    <tr>
+    <th>Responsibility</th>
+    <th>Owner</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>Canonical OpenAPI, protobuf, or CRD source</td>
+    <td>Provider repository</td>
+    </tr>
+    <tr>
+    <td>Provider implementation and behavior tests</td>
+    <td>Provider team</td>
+    </tr>
+    <tr>
+    <td>Consumer expectations and consumer tests</td>
+    <td>Consumer repository, reviewed with provider</td>
+    </tr>
+    <tr>
+    <td>Standards, descriptor schemas, policies, modules, and
+    reporting</td>
+    <td>Working group through <code>api-contract-central</code></td>
+    </tr>
+    <tr>
+    <td>Cross-component conformance profile</td>
+    <td>Joint provider/consumer DRI</td>
+    </tr>
+    <tr>
+    <td>Supported release matrix</td>
+    <td>Productization representatives</td>
+    </tr>
+    <tr>
+    <td>Dashboard end-to-end signal</td>
+    <td>Dashboard team</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>The central catalog stores repository, revision, path, owner,
+    consumer, support-level, and conformance-profile pointers. It must
+    not store copied provider specifications. A central copy would drift
+    from the implementation and transfer ownership away from the team
+    changing the API.</p>
+    <h2 id="modular-api-contract-central">Modular
+    <code>api-contract-central</code></h2>
+    <pre class="text"><code>api-contract-central/
+├── CHARTER.md
+├── GOVERNANCE.md
+├── COMPATIBILITY_POLICY.md
+├── SECURITY.md
+├── schemas/                 # provider descriptor, consumer profile, findings
+├── catalog/                 # pointers and supported release matrices
+├── policies/                # stable, preview, and experimental behavior
+├── modules/
+│   ├── openapi-compat/
+│   ├── protobuf-compat/
+│   ├── crd-compat/
+│   ├── crd-upgrade/
+│   ├── dependency-adoption/
+│   └── result-import/
+├── conformance/             # cross-repository orchestration profiles
+├── cmd/rhoai-contract/      # local runner
+├── actions/check/           # composable GitHub Action
+├── .github/workflows/       # shortest reusable workflow
+├── templates/
+└── docs/onboarding/</code></pre>
+    <h3 id="module-interface">Module interface</h3>
+    <p>Every module receives the same versioned input: checked-out
+    workspace, provider descriptor, generated candidate, immutable
+    baseline set, changed files, policy, and execution mode. Every
+    module emits the same finding shape: stable rule ID, severity,
+    location, affected consumer, evidence, remediation, and help
+    URL.</p>
+    <p>V1 modules are reviewed and built into a signed runner. Provider
+    behavior tests remain in the provider&#39;s language and CI; the central
+    reporter can import their JSON or JUnit results. The runner must not
+    execute arbitrary commands supplied by pull-request-controlled
+    configuration.</p>
+    <h3 id="immutable-contract-baselines">Immutable contract
+    baselines</h3>
+    <p>The <code>kubeflow/notebooks</code> <code>swagger.version</code>
+    mechanism is a useful starting pattern: record the exact provider
+    revision containing the contract a consumer supports. The design
+    strengthens that pattern with candidate generation, a rolling
+    accepted snapshot, all still-supported release snapshots, content
+    digests, and behavior evidence.</p>
+    <p>An immutable snapshot never changes. &quot;Updating the baseline&quot;
+    means publishing a new snapshot and advancing a protected pointer to
+    it; it never means overwriting the bytes behind an existing SHA,
+    version, or digest.</p>
+    <p>Two baseline classes are required:</p>
+    <ul>
+    <li><strong>Rolling accepted snapshot:</strong> After each
+    compatible merge to a protected provider branch, a trusted
+    post-merge workflow publishes a new commit-addressed snapshot and
+    advances <code>latest-accepted/&lt;branch&gt;</code>. The next pull
+    request compares against it, so it cannot silently remove a field
+    added after the last product release.</li>
+    <li><strong>Supported-release snapshots:</strong> Productization
+    promotes an existing accepted snapshot into the supported-release
+    matrix. Candidates remain compatible with every applicable supported
+    release until its declared support window ends.</li>
+    </ul>
+    <p>Consumer pins add evidence for specific dependencies but do not
+    replace either required baseline class.</p>
+    <h3 id="who-advances-a-baseline-and-when">Who advances a baseline,
+    and when</h3>
+    <ol type="1">
+    <li>The provider API owner reviews and merges a candidate only after
+    the six-step gate passes, or after the intentional-change process
+    has received all required approvals.</li>
+    <li>A trusted post-merge workflow generates the contract again,
+    records the provider Git SHA, content digest, generator version,
+    policy, and module versions, and publishes an append-only
+    snapshot.</li>
+    <li>That workflow advances the rolling branch pointer. A provider
+    pull request cannot advance the pointer used to assess itself.</li>
+    <li>When a component release becomes supported, productization
+    proposes a separate release-matrix change that references the
+    already published snapshot. Affected consumer owners approve relied-
+    on behavior; productization approves matrix membership;
+    <code>CODEOWNERS</code> enforce those reviews.</li>
+    <li>Consumer-owned pins advance through separate reviewed consumer
+    pull requests. An old release snapshot leaves the required
+    comparison set only when its support window ends; the snapshot
+    remains available for audit and reproduction.</li>
+    </ol>
+    <p>The working group owns baseline rules, policy schemas, and
+    exception policy. It does not approve every ordinary compatible
+    provider change. An intentional stable-interface break additionally
+    requires the migration/deprecation record, affected-consumer
+    approval, and product/support-owner approval.</p>
+    <h3 id="drift-outcomes">Drift outcomes</h3>
+    <table>
+    <thead>
+    <tr>
+    <th>Observed drift</th>
+    <th>Enforcement result</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>Candidate is additively compatible with all required
+    baselines</td>
+    <td>Pass, record evidence, and publish a new rolling snapshot after
+    merge.</td>
+    </tr>
+    <tr>
+    <td>Candidate breaks any required rolling, release, or consumer
+    baseline</td>
+    <td>Fail and name the affected interface, release, consumer, and
+    owner.</td>
+    </tr>
+    <tr>
+    <td>Generated candidate differs from the provider&#39;s committed
+    generated artifact</td>
+    <td>Fail as source/specification drift.</td>
+    </tr>
+    <tr>
+    <td>Baseline is missing, mutable, unresolved, or has a digest
+    mismatch</td>
+    <td>Fail closed as configuration or integrity drift.</td>
+    </tr>
+    <tr>
+    <td>Required behavior result is missing, malformed, or failing</td>
+    <td>Fail closed; a schema-only pass is insufficient for that
+    contract profile.</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>Different does not automatically mean failing: compatible
+    additive evolution must remain possible. Breaking drift and
+    trust/integrity drift fail.</p>
+    <p>Deterministic candidate generation is mandatory. The particular
+    generator is provider-selectable: <code>swaggo/swag</code> can
+    generate OpenAPI from Go annotations, another adapter can bundle a
+    contract-first OpenAPI source, and <code>controller-gen</code> can
+    regenerate operator CRDs. Every adapter is approved and pinned; the
+    runner does not execute arbitrary commands supplied by
+    pull-request-controlled configuration. Structural generation still
+    cannot prove every runtime semantic, so provider behavior tests and
+    explicit consumer expectations remain required where the profile
+    calls for them.</p>
+    <h3 id="provider-descriptor">Provider descriptor</h3>
+    <p>The component-owned descriptor points to local sources without
+    copying them:</p>
+    <div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> contracts.rhoai.io/v1alpha1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ContractSet</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> model-registry</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">supportLevel</span><span class="kw">:</span><span class="at"> stable</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">candidate</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">generator</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">module</span><span class="kw">:</span><span class="at"> openapi.bundle</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0.0</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inputs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">api/openapi/model-registry.yaml</span><span class="kw">]</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">declaredArtifact</span><span class="kw">:</span><span class="at"> api/openapi/model-registry.yaml</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">baselines</span><span class="kw">:</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rolling</span><span class="kw">:</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> target-branch-latest-accepted</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">releases</span><span class="kw">:</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> all-supported</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">contracts</span><span class="kw">:</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> model-registry-rest</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> openapi</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">source</span><span class="kw">:</span><span class="at"> api/openapi/model-registry.yaml</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">policy</span><span class="kw">:</span><span class="at"> stable-v1</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">modules</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">openapi.breaking-diff</span><span class="kw">,</span><span class="at"> openapi.policy</span><span class="kw">]</span></span></code></pre></div>
+    <p>Contract location, contract type, baseline, and policy remain
+    independent. The framework does not infer where an artifact lives
+    from the component it tests.</p>
+    <h2 id="simple-team-onboarding">Simple Team Onboarding</h2>
+    <ol type="1">
+    <li>Run <code>rhoai-contract init</code> to discover API
+    descriptions or CRDs and scaffold the descriptor.</li>
+    <li>Select and pin an approved deterministic generator adapter and
+    declared output artifact.</li>
+    <li>Confirm owner, support level, baseline set, policy, and selected
+    modules.</li>
+    <li>Add the reusable workflow in <code>report</code> mode.</li>
+    <li>Register a pointer to the descriptor in the central
+    catalog.</li>
+    <li>Review named consumer expectations with the consumer team.</li>
+    <li>Seed one incompatible change and one stale-generated-artifact
+    change to prove both failure paths.</li>
+    <li>After an agreed report-only period, pin the approved runner and
+    policy and enable enforcement.</li>
+    </ol>
+    <p>The shortest GitHub integration is one job:</p>
+    <div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">api-contract</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">permissions</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">contents</span><span class="kw">:</span><span class="at"> read</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> opendatahub-io/api-contract-central/.github/workflows/provider-check.yml@v0</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">contract-set</span><span class="kw">:</span><span class="at"> .rhoai/contracts.yaml</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> report</span></span></code></pre></div>
+    <p>Repositories needing custom job ordering can call
+    <code>opendatahub-io/api-contract-central/actions/check@v0</code>
+    after checkout. The same engine runs locally:</p>
+    <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">rhoai-contract</span> check <span class="at">--contract-set</span> .rhoai/contracts.yaml <span class="at">--mode</span> report</span></code></pre></div>
+    <p>The readable <code>v0</code> tag is suitable for the report-only
+    pilot. Required workflows must pin the approved commit or signed
+    image digest and receive explicit update pull requests.</p>
+    <h2 id="pilot-cohort">Pilot Cohort</h2>
+    <p>The pilot has three provider repositories plus Dashboard in the
+    consumer role.</p>
+    <h3 id="model-registry-conventional-service-api"><code>model-registry</code>:
+    conventional service API</h3>
+    <ul>
+    <li>Generate or bundle the candidate OpenAPI artifact from the
+    pull-request source on every run, then verify it against any
+    committed generated artifact.</li>
+    <li>Compare it with the rolling accepted snapshot and every
+    applicable supported-release snapshot.</li>
+    <li>Check removed operations/fields and incompatible input, default,
+    response, status, error, and authorization changes.</li>
+    <li>Run provider-native response conformance for the Dashboard-used
+    subset.</li>
+    <li>Keep a Dashboard-owned profile of the operations and semantics
+    its BFF/client consumes.</li>
+    <li>Prove the path by seeding one incompatible change to a consumed
+    operation or response.</li>
+    </ul>
+    <h3 id="opendatahub-operator-crd-and-upgrade-behavior"><code>opendatahub-operator</code>:
+    CRD and upgrade behavior</h3>
+    <ul>
+    <li>Regenerate candidate CRDs from the pull-request Go types with
+    the provider&#39;s pinned generation adapter and fail when they differ
+    from committed CRD YAML.</li>
+    <li>Compare the generated CRDs with rolling and supported-release
+    snapshots, served/storage versions, conversion configuration, and
+    N-1 fixtures.</li>
+    <li>Check type, required-field, enum, default, validation, version,
+    and conversion compatibility.</li>
+    <li>Import provider-owned reconciliation, status/readiness, and
+    upgrade results.</li>
+    <li>Keep Dashboard expectations for the DSC/DSCI fields and
+    conditions it reads.</li>
+    <li>Prove the path with a removed consumed field, tightened
+    validation, or broken version conversion.</li>
+    </ul>
+    <h3 id="workbenches-operator-cross-repository-notebook-integration"><code>workbenches-operator</code>:
+    cross-repository Notebook integration</h3>
+    <ul>
+    <li>Regenerate the provider-owned Workbenches CRD and related
+    candidate artifacts from pull-request source; fail
+    generated/committed drift before compatibility analysis.</li>
+    <li>Use webhook, RBAC, dependency range, fixtures, rolling and
+    supported-release snapshots, and native behavior tests.</li>
+    <li>Reference canonical Notebook and external dependency artifacts;
+    do not copy their schemas.</li>
+    <li>Exercise Dashboard-created Notebook create/update fixtures
+    through webhook and reconciliation behavior.</li>
+    <li>Check required annotations, labels, mutation, readiness, and
+    delete behavior.</li>
+    <li>Run a central conformance profile against pinned Workbenches,
+    Notebook, Kueue, and Dashboard revisions.</li>
+    <li>Prove the path with a validation or webhook change that rejects
+    or incompatibly mutates a Dashboard fixture.</li>
+    </ul>
+    <p>Dashboard participates even though the component tracker
+    primarily lists suppliers: the key consumer must have an explicit
+    expectation and conformance role.</p>
+    <h2 id="external-dependency-adoption">External Dependency
+    Adoption</h2>
+    <p>For dependencies such as Kueue or OGX, the RHOAI-owning
+    repository must:</p>
+    <ol type="1">
+    <li>Declare the supported version or range.</li>
+    <li>Maintain an adapter/integration suite for the behavior RHOAI
+    uses.</li>
+    <li>Run that suite when a dependency update is proposed.</li>
+    <li>Fail the adoption before integration if the suite breaks.</li>
+    <li>Name a DRI and escalation route for upstream
+    incompatibility.</li>
+    </ol>
+    <p>The goal is early detection and an explicit adoption decision,
+    not preventing an external project from changing.</p>
+    <h2 id="enforcement-and-intentional-change">Enforcement and
+    Intentional Change</h2>
+    <p>Use three enforcement points:</p>
+    <ol type="1">
+    <li><strong>Provider pull request:</strong> compatibility checks for
+    a provider-owned change.</li>
+    <li><strong>Intentional breaking change:</strong> reviewed
+    migration/deprecation record naming consumers, dates, support level,
+    release target, and DRI.</li>
+    <li><strong>Release conformance:</strong> supported provider,
+    consumer, and dependency versions run together.</li>
+    </ol>
+    <p>Exceptions require an owner, rationale, issue, expiry, and
+    provider/consumer approval. The policy for stable, preview, and
+    experimental interfaces may differ, but every change is detected and
+    recorded.</p>
+    <h2 id="proposed-two-week-thin-slice">Proposed Two-Week Thin
+    Slice</h2>
+    <h3 id="week-1-agree-and-scaffold">Week 1: Agree and scaffold</h3>
+    <ul>
+    <li>Approve charter, taxonomy, ownership, breaking-change
+    definition, and the three boundaries.</li>
+    <li>Name one representative for each provider and agree support
+    levels and baselines.</li>
+    <li>Scaffold the central repository, schemas, pointer catalog,
+    module protocol, local runner, common finding format, and
+    report-only workflow.</li>
+    <li>Draft one provider descriptor and one Dashboard consumer profile
+    per pilot.</li>
+    </ul>
+    <h3 id="week-2-execute-and-decide">Week 2: Execute and decide</h3>
+    <ul>
+    <li>Implement one thin executable module/profile for each pilot
+    boundary.</li>
+    <li>Open report-mode CI changes in all three provider
+    repositories.</li>
+    <li>Run one positive and one seeded-negative scenario for each
+    boundary.</li>
+    <li>Publish a scorecard, outstanding gaps, policy one-pager, and
+    enforce/no-enforce recommendation.</li>
+    </ul>
+    <p>Dates for the first working-group session and final pilot
+    recommendation must be agreed when the group accepts this
+    proposal.</p>
+    <h2 id="pilot-success-measures">Pilot Success Measures</h2>
+    <ul>
+    <li>All three providers have named owners, descriptors, consumer
+    profiles, and CI integration.</li>
+    <li>Every pull request produces a normalized candidate from source
+    and records its digest.</li>
+    <li>Generated candidates match declared committed artifacts, and
+    results name every baseline SHA or digest used.</li>
+    <li>All seeded incompatible changes and selected historical replays
+    produce actionable diagnostics.</li>
+    <li>A seeded removal of an additively introduced post-release field
+    is caught by the rolling accepted snapshot.</li>
+    <li>No canonical provider specification is duplicated
+    centrally.</li>
+    <li>Local and CI execution resolve the same baseline, policy,
+    modules, and result.</li>
+    <li>Adding CI after a descriptor exists takes no more than 30
+    minutes.</li>
+    <li>No unexplained false positive remains at pilot close.</li>
+    <li>Enforcement starts only after report-mode stability and
+    provider/consumer agreement.</li>
+    <li>Release results identify the exact supported component and
+    dependency revisions.</li>
+    </ul>
+    <h2 id="initial-roles-and-open-decisions">Initial Roles and Open
+    Decisions</h2>
+    <table>
+    <thead>
+    <tr>
+    <th>Role</th>
+    <th>Initial representative</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>Working-group facilitator</td>
+    <td>Edson Tirelli</td>
+    </tr>
+    <tr>
+    <td>Dashboard consumer representative</td>
+    <td>Anthony Coughlin</td>
+    </tr>
+    <tr>
+    <td>Productization representatives</td>
+    <td>Rishab Prasad and Radim Kubis</td>
+    </tr>
+    <tr>
+    <td>Provider representatives</td>
+    <td>One named maintainer from each pilot repository</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>The group must confirm the final repository name, support-level
+    definitions, baseline rules, exception review, first release matrix,
+    meeting date, and recommendation date. All CRDs are a candidate
+    low-friction expansion after the pilot. Model Catalog and MCP
+    Catalog remain future cohort discussion; other non-pilot components
+    are deferred.</p>
+    <h2 id="guardrails">Guardrails</h2>
+    <ul>
+    <li>Keep canonical provider contracts and provider tests beside
+    their implementations.</li>
+    <li>Keep the central catalog pointer-only.</li>
+    <li>Generate a normalized candidate from pull-request source on
+    every run; do not trust a stale committed artifact as the
+    candidate.</li>
+    <li>Resolve baseline selection, generator policy, and enforcement
+    policy from protected target-branch configuration. A pull request
+    cannot weaken the checks used to assess itself.</li>
+    <li>Publish baselines only through trusted post-merge or release
+    workflows and verify full SHAs or content digests.</li>
+    <li>Treat schema checks as one compatibility signal, not the
+    complete guarantee.</li>
+    <li>Keep Dashboard full end-to-end tests out of the provider
+    pull-request gate.</li>
+    <li>Pin required CI tooling and policy revisions.</li>
+    <li>Allow only reviewed modules; treat descriptors and test output
+    as untrusted input.</li>
+    <li>Run cross-component scenarios in disposable, quota-limited
+    environments without production credentials.</li>
+    <li>Make exceptions explicit, reviewed, auditable, and
+    time-limited.</li>
+    </ul>
+    <h2 id="sources">Sources</h2>
+    <ul>
+    <li>Recent RHOAI API Contract Layer working-group notes supplied
+    with this proposal.</li>
+    <li><a href="../../research/dashboard-integration-gap-analysis.html">Dashboard
+    Integration Gap Analysis</a></li>
+    <li><a href="https://docs.google.com/presentation/d/1nKnsVGBL92mnXu8chWMxd9VLt1wgu7fRarrimVqMQbo/edit?slide=id.g379a97894cb_2_1095#slide=id.g379a97894cb_2_1095"><code>kubeflow/notebooks</code>
+    Swagger reference architecture</a></li>
+    <li><a href="https://github.com/opendatahub-io/model-registry"><code>opendatahub-io/model-registry</code></a></li>
+    <li><a href="https://github.com/opendatahub-io/opendatahub-operator"><code>opendatahub-io/opendatahub-operator</code></a></li>
+    <li><a href="https://github.com/opendatahub-io/workbenches-operator"><code>opendatahub-io/workbenches-operator</code></a></li>
+    </ul>
+  </main>
+</body>
+</html>

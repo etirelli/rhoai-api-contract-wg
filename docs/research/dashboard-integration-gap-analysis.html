@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upstream Bug Impact Analysis</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a2e;
+    --muted: #64748b;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e2e8f0;
+    --surface: #f8fafc;
+    --red: #dc2626;
+    --green: #16a34a;
+    --amber: #d97706;
+    --code-bg: #f1f5f9;
+    --table-header: #f1f5f9;
+    --table-stripe: #f8fafc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a;
+      --fg: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
+      --accent-light: #1e3a5f;
+      --border: #334155;
+      --surface: #1e293b;
+      --red: #f87171;
+      --green: #4ade80;
+      --amber: #fbbf24;
+      --code-bg: #1e293b;
+      --table-header: #1e293b;
+      --table-stripe: #162032;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.7; max-width: 1100px;
+    margin: 0 auto; padding: 2rem 1.5rem 4rem;
+  }
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+  header .subtitle { font-size: 1.05rem; color: var(--muted); margin-bottom: 1rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: 1.5rem; font-size: 0.875rem; color: var(--muted); }
+  .meta span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 1.15rem; font-weight: 600; margin: 1.8rem 0 0.6rem; }
+  h4 { font-size: 1rem; font-weight: 600; margin: 1.4rem 0 0.5rem; }
+  p { margin-bottom: 0.9rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.35rem; }
+  strong { font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.88rem; }
+  th { background: var(--table-header); font-weight: 600; text-align: left; padding: 0.6rem 0.75rem; border: 1px solid var(--border); }
+  td { padding: 0.5rem 0.75rem; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.85em; background: var(--code-bg);
+    padding: 0.15em 0.4em; border-radius: 4px;
+  }
+
+  .callout {
+    background: var(--surface); border-left: 4px solid var(--accent);
+    padding: 1rem 1.25rem; margin: 1rem 0 1.5rem; border-radius: 0 8px 8px 0;
+  }
+  .callout.red { border-left-color: var(--red); }
+  .callout.green { border-left-color: var(--green); }
+  .callout.amber { border-left-color: var(--amber); }
+
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1rem; margin: 1.25rem 0 1.5rem;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem 1.25rem; text-align: center;
+  }
+  .stat-card .number { font-size: 2rem; font-weight: 700; line-height: 1.2; }
+  .stat-card .number.red { color: var(--red); }
+  .stat-card .number.amber { color: var(--amber); }
+  .stat-card .number.green { color: var(--green); }
+  .stat-card .number.accent { color: var(--accent); }
+  .stat-card .label { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+
+  .badge {
+    display: inline-block; font-size: 0.72rem; font-weight: 600;
+    padding: 0.15em 0.55em; border-radius: 999px; vertical-align: middle;
+    white-space: nowrap;
+  }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  .badge-blue { background: var(--accent-light); color: var(--accent); }
+  .badge-gray { background: #f1f5f9; color: #475569; }
+  @media (prefers-color-scheme: dark) {
+    .badge-red { background: #450a0a; color: #fca5a5; }
+    .badge-green { background: #052e16; color: #86efac; }
+    .badge-amber { background: #451a03; color: #fcd34d; }
+    .badge-blue { background: #1e3a5f; color: #93c5fd; }
+    .badge-gray { background: #334155; color: #94a3b8; }
+  }
+
+  .toc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0;
+  }
+  .toc h3 { margin-top: 0; }
+  .toc ol { margin: 0.5rem 0 0 1.25rem; }
+  .toc li { margin-bottom: 0.25rem; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .phase-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem; margin: 1rem 0;
+  }
+  .phase-card h4 { margin-top: 0; color: var(--accent); }
+
+  .chart-section {
+    margin: 1.5rem 0;
+  }
+  .chart-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1.5rem; margin: 1.5rem 0;
+  }
+  @media (max-width: 768px) {
+    .chart-grid { grid-template-columns: 1fr; }
+  }
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem;
+  }
+  .chart-card h4 { margin-top: 0; margin-bottom: 1rem; color: var(--muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pie-container {
+    display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; justify-content: center;
+  }
+
+  .comparison-table td:first-child { font-weight: 600; white-space: nowrap; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .highlight-row td { background: #fef9c3 !important; }
+  @media (prefers-color-scheme: dark) { .highlight-row td { background: #422006 !important; } }
+
+  .overflow-x { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Upstream Bug Impact Analysis</h1>
+  <p class="subtitle"><code>cypress_found_bug</code> &mdash; Upstream Component Teams Only</p>
+  <div class="meta">
+    <span><strong>Author:</strong> Anthony Coughlin</span>
+    <span><strong>Date:</strong> 2026-08-31</span>
+    <span><strong>Status:</strong> <span class="badge badge-amber">Draft</span></span>
+    <span><strong>Related:</strong>
+      <a href="https://issues.redhat.com/browse/RHOAIENG-76377">RHOAIENG-76377</a>,
+      <a href="https://issues.redhat.com/browse/RHOAIENG-87641">RHOAIENG-87641</a>,
+      <a href="https://issues.redhat.com/browse/RHOAIENG-75513">RHOAIENG-75513</a>
+    </span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#summary">Executive Summary</a></li>
+    <li><a href="#charts">Visual Breakdown</a></li>
+    <li><a href="#team-table">Component Team Responsibility</a></li>
+    <li><a href="#gap-analysis">Per-Component Gap Analysis</a></li>
+    <li><a href="#parity">Cypress E2E &rarr; Backend Test Parity</a></li>
+    <li><a href="#reclassification">Bug Reclassification &amp; Detection Layers</a></li>
+    <li><a href="#ai-factory">Connection to AI Factory</a></li>
+    <li><a href="#full-list">Full Upstream Bug List</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<!-- EXECUTIVE SUMMARY -->
+<!-- ============================================================ -->
+<h2 id="summary">Executive Summary</h2>
+
+<p>The dashboard's Jenkins nightly pipeline deploys the latest upstream operators, then runs Cypress E2E tests. When an upstream operator fails to deploy (CrashLoopBackOff, DSC not ready, RBAC failure), the entire nightly is blocked and the failure is labeled <code>cypress_found_bug</code>. This report analyzes <strong>only upstream component bugs</strong> &mdash; dashboard product bugs, test infrastructure issues, and build/DevOps problems have been excluded.</p>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="number accent">132</div><div class="label">upstream component bugs</div></div>
+  <div class="stat-card"><div class="number red">80%</div><div class="label">Blocker + Critical</div></div>
+  <div class="stat-card"><div class="number amber">11</div><div class="label">component teams responsible</div></div>
+  <div class="stat-card"><div class="number" style="color:var(--muted)">13.3</div><div class="label">avg bugs/month (last 6 mo)</div></div>
+</div>
+
+<div class="callout">
+  <strong>Scope:</strong> 194 total <code>cypress_found_bug</code> issues were analyzed. <strong>15</strong> dashboard product bugs, <strong>31</strong> test infrastructure issues, and <strong>16</strong> build/DevOps issues were excluded. The remaining <strong>132</strong> upstream component bugs are shown below.
+</div>
+
+<div class="callout red">
+  <strong>Key finding:</strong> 80% of upstream bugs are Blocker or Critical priority. The top 3 teams (KServe/Model Serving, MaaS/Kuadrant, AI Core Platform) account for 73 of 132 bugs (55%).
+</div>
+
+<!-- ============================================================ -->
+<!-- VISUAL BREAKDOWN -->
+<!-- ============================================================ -->
+<h2 id="charts">Visual Breakdown</h2>
+
+<div class="chart-grid">
+  <div class="chart-card" style="grid-column: span 2">
+    <h4>Bugs by Component Team</h4>
+    <div class="pie-container">
+      <svg viewBox="0 0 300 300" width="300" height="300" style="max-width:100%">
+    <path d="M 150.0,150.0 L 150.0,30.0 A 120.0,120.0 0 0,1 267.8,127.3 Z" fill="#2563eb" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>KServe / Model Serving: 29 (22%)</title></path><path d="M 150.0,150.0 L 267.8,127.3 A 120.0,120.0 0 0,1 224.2,244.3 Z" fill="#dc2626" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>MaaS / Kuadrant / AI Gateway: 23 (17%)</title></path><path d="M 150.0,150.0 L 224.2,244.3 A 120.0,120.0 0 0,1 110.8,263.4 Z" fill="#d97706" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>AI Core Platform / Operator: 21 (16%)</title></path><path d="M 150.0,150.0 L 110.8,263.4 A 120.0,120.0 0 0,1 46.1,210.0 Z" fill="#16a34a" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>Model Registry / AI Hub: 15 (11%)</title></path><path d="M 150.0,150.0 L 46.1,210.0 A 120.0,120.0 0 0,1 30.5,138.6 Z" fill="#7c3aed" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>Workbenches / Notebooks: 13 (10%)</title></path><path d="M 150.0,150.0 L 30.5,138.6 A 120.0,120.0 0 0,1 49.0,85.1 Z" fill="#0891b2" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>Gen AI: 10 (8%)</title></path><path d="M 150.0,150.0 L 49.0,85.1 A 120.0,120.0 0 0,1 80.4,52.3 Z" fill="#be185d" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>Feature Store / Feast: 8 (6%)</title></path><path d="M 150.0,150.0 L 80.4,52.3 A 120.0,120.0 0 0,1 105.4,38.6 Z" fill="#65a30d" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>MLflow: 5 (4%)</title></path><path d="M 150.0,150.0 L 105.4,38.6 A 120.0,120.0 0 0,1 132.9,31.2 Z" fill="#6366f1" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>Pipelines / DSPA: 5 (4%)</title></path><path d="M 150.0,150.0 L 132.9,31.2 A 120.0,120.0 0 0,1 144.3,30.1 Z" fill="#ea580c" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>Training: 2 (2%)</title></path><path d="M 150.0,150.0 L 144.3,30.1 A 120.0,120.0 0 0,1 150.0,30.0 Z" fill="#64748b" stroke="var(--bg)" stroke-width="2" opacity="0.9"><title>AutoML: 1 (1%)</title></path>
+    </svg>
+      <div style="display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#2563eb;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">KServe / Model Serving <strong>(29)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#dc2626;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">MaaS / Kuadrant / AI Gateway <strong>(23)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#d97706;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">AI Core Platform / Operator <strong>(21)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#16a34a;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">Model Registry / AI Hub <strong>(15)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#7c3aed;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">Workbenches / Notebooks <strong>(13)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#0891b2;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">Gen AI <strong>(10)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#be185d;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">Feature Store / Feast <strong>(8)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#65a30d;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">MLflow <strong>(5)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#6366f1;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">Pipelines / DSPA <strong>(5)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#ea580c;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">Training <strong>(2)</strong></span></div><div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:12px;height:12px;border-radius:2px;background:#64748b;flex-shrink:0"></div><span style="font-size:0.8rem;color:var(--fg)">AutoML <strong>(1)</strong></span></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="chart-grid">
+  <div class="chart-card" style="grid-column: span 2">
+    <h4>Monthly Trend (All Time)</h4>
+    <div class="overflow-x">
+      <svg viewBox="0 0 700.0 260" width="700.0" height="260" style="max-width:100%;overflow:visible">
+    <line x1="40" y1="210" x2="690.0" y2="210" stroke="var(--border)" stroke-width="1"/>
+    <rect x="42.0" y="203.2" width="28.0" height="6.8" fill="#2563eb" rx="2" opacity="0.85"><title>2025-01: 1</title></rect><text x="56.0" y="199.2" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">1</text><text x="56.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 56.0, 224.0)">2025-01</text><rect x="74.0" y="189.6" width="28.0" height="20.4" fill="#2563eb" rx="2" opacity="0.85"><title>2025-02: 3</title></rect><text x="88.0" y="185.6" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">3</text><text x="88.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 88.0, 224.0)">2025-02</text><rect x="106.0" y="196.4" width="28.0" height="13.6" fill="#2563eb" rx="2" opacity="0.85"><title>2025-03: 2</title></rect><text x="120.0" y="192.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">2</text><text x="120.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 120.0, 224.0)">2025-03</text><rect x="138.0" y="189.6" width="28.0" height="20.4" fill="#2563eb" rx="2" opacity="0.85"><title>2025-04: 3</title></rect><text x="152.0" y="185.6" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">3</text><text x="152.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 152.0, 224.0)">2025-04</text><rect x="170.0" y="196.4" width="28.0" height="13.6" fill="#2563eb" rx="2" opacity="0.85"><title>2025-05: 2</title></rect><text x="184.0" y="192.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">2</text><text x="184.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 184.0, 224.0)">2025-05</text><rect x="202.0" y="196.4" width="28.0" height="13.6" fill="#2563eb" rx="2" opacity="0.85"><title>2025-06: 2</title></rect><text x="216.0" y="192.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">2</text><text x="216.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 216.0, 224.0)">2025-06</text><rect x="234.0" y="142.1" width="28.0" height="67.9" fill="#2563eb" rx="2" opacity="0.85"><title>2025-07: 10</title></rect><text x="248.0" y="138.1" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">10</text><text x="248.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 248.0, 224.0)">2025-07</text><rect x="266.0" y="176.1" width="28.0" height="33.9" fill="#2563eb" rx="2" opacity="0.85"><title>2025-08: 5</title></rect><text x="280.0" y="172.1" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">5</text><text x="280.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 280.0, 224.0)">2025-08</text><rect x="298.0" y="162.5" width="28.0" height="47.5" fill="#2563eb" rx="2" opacity="0.85"><title>2025-09: 7</title></rect><text x="312.0" y="158.5" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">7</text><text x="312.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 312.0, 224.0)">2025-09</text><rect x="330.0" y="176.1" width="28.0" height="33.9" fill="#2563eb" rx="2" opacity="0.85"><title>2025-10: 5</title></rect><text x="344.0" y="172.1" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">5</text><text x="344.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 344.0, 224.0)">2025-10</text><rect x="362.0" y="196.4" width="28.0" height="13.6" fill="#2563eb" rx="2" opacity="0.85"><title>2025-11: 2</title></rect><text x="376.0" y="192.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">2</text><text x="376.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 376.0, 224.0)">2025-11</text><rect x="394.0" y="189.6" width="28.0" height="20.4" fill="#2563eb" rx="2" opacity="0.85"><title>2025-12: 3</title></rect><text x="408.0" y="185.6" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">3</text><text x="408.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 408.0, 224.0)">2025-12</text><rect x="426.0" y="196.4" width="28.0" height="13.6" fill="#2563eb" rx="2" opacity="0.85"><title>2026-01: 2</title></rect><text x="440.0" y="192.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">2</text><text x="440.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 440.0, 224.0)">2026-01</text><rect x="458.0" y="176.1" width="28.0" height="33.9" fill="#2563eb" rx="2" opacity="0.85"><title>2026-02: 5</title></rect><text x="472.0" y="172.1" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">5</text><text x="472.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 472.0, 224.0)">2026-02</text><rect x="490.0" y="176.1" width="28.0" height="33.9" fill="#2563eb" rx="2" opacity="0.85"><title>2026-03: 5</title></rect><text x="504.0" y="172.1" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">5</text><text x="504.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 504.0, 224.0)">2026-03</text><rect x="522.0" y="155.7" width="28.0" height="54.3" fill="#2563eb" rx="2" opacity="0.85"><title>2026-04: 8</title></rect><text x="536.0" y="151.7" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">8</text><text x="536.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 536.0, 224.0)">2026-04</text><rect x="554.0" y="128.6" width="28.0" height="81.4" fill="#2563eb" rx="2" opacity="0.85"><title>2026-05: 12</title></rect><text x="568.0" y="124.6" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">12</text><text x="568.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 568.0, 224.0)">2026-05</text><rect x="586.0" y="135.4" width="28.0" height="74.6" fill="#2563eb" rx="2" opacity="0.85"><title>2026-06: 11</title></rect><text x="600.0" y="131.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">11</text><text x="600.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 600.0, 224.0)">2026-06</text><rect x="618.0" y="20.0" width="28.0" height="190.0" fill="#2563eb" rx="2" opacity="0.85"><title>2026-07: 28</title></rect><text x="632.0" y="16.0" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">28</text><text x="632.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 632.0, 224.0)">2026-07</text><rect x="650.0" y="101.4" width="28.0" height="108.6" fill="#2563eb" rx="2" opacity="0.85"><title>2026-08: 16</title></rect><text x="664.0" y="97.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">16</text><text x="664.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 664.0, 224.0)">2026-08</text>
+    </svg>
+    </div>
+  </div>
+</div>
+
+<div class="chart-grid">
+  <div class="chart-card">
+    <h4>Priority Distribution</h4>
+    <div class="overflow-x">
+      <svg viewBox="0 0 324 260" width="324" height="260" style="max-width:100%;overflow:visible">
+    <line x1="40" y1="210" x2="314" y2="210" stroke="var(--border)" stroke-width="1"/>
+    <rect x="42.0" y="20.0" width="40.0" height="190.0" fill="#dc2626" rx="2" opacity="0.85"><title>Blocker: 82</title></rect><text x="62.0" y="16.0" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">82</text><text x="62.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 62.0, 224.0)">Blocker</text><rect x="86.0" y="154.4" width="40.0" height="55.6" fill="#ea580c" rx="2" opacity="0.85"><title>Critical: 24</title></rect><text x="106.0" y="150.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">24</text><text x="106.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 106.0, 224.0)">Critical</text><rect x="130.0" y="168.3" width="40.0" height="41.7" fill="#d97706" rx="2" opacity="0.85"><title>Major: 18</title></rect><text x="150.0" y="164.3" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">18</text><text x="150.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 150.0, 224.0)">Major</text><rect x="174.0" y="198.4" width="40.0" height="11.6" fill="#2563eb" rx="2" opacity="0.85"><title>Normal: 5</title></rect><text x="194.0" y="194.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">5</text><text x="194.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 194.0, 224.0)">Normal</text><rect x="218.0" y="207.7" width="40.0" height="2.3" fill="#16a34a" rx="2" opacity="0.85"><title>Minor: 1</title></rect><text x="238.0" y="203.7" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">1</text><text x="238.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 238.0, 224.0)">Minor</text><rect x="262.0" y="205.4" width="40.0" height="4.6" fill="#64748b" rx="2" opacity="0.85"><title>Undefined: 2</title></rect><text x="282.0" y="201.4" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">2</text><text x="282.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 282.0, 224.0)">Undefine</text>
+    </svg>
+    </div>
+  </div>
+  <div class="chart-card">
+    <h4>Top Fix Versions</h4>
+    <div class="overflow-x">
+      <svg viewBox="0 0 500 260" width="500" height="260" style="max-width:100%;overflow:visible">
+    <line x1="40" y1="210" x2="490" y2="210" stroke="var(--border)" stroke-width="1"/>
+    <rect x="42.0" y="20.0" width="40.0" height="190.0" fill="#7c3aed" rx="2" opacity="0.85"><title>3.5 GA RHOAI RELEASE: 15</title></rect><text x="62.0" y="16.0" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">15</text><text x="62.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 62.0, 224.0)">3.5 GA</text><rect x="86.0" y="134.0" width="40.0" height="76.0" fill="#7c3aed" rx="2" opacity="0.85"><title>3.5 EA2 RHOAI RELEASE: 6</title></rect><text x="106.0" y="130.0" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">6</text><text x="106.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 106.0, 224.0)">3.5 EA2</text><rect x="130.0" y="134.0" width="40.0" height="76.0" fill="#7c3aed" rx="2" opacity="0.85"><title>3.5 EA1 RHOAI RELEASE: 6</title></rect><text x="150.0" y="130.0" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">6</text><text x="150.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 150.0, 224.0)">3.5 EA1</text><rect x="174.0" y="146.7" width="40.0" height="63.3" fill="#7c3aed" rx="2" opacity="0.85"><title>rhoai-3.4: 5</title></rect><text x="194.0" y="142.7" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">5</text><text x="194.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 194.0, 224.0)">3.4</text><rect x="218.0" y="146.7" width="40.0" height="63.3" fill="#7c3aed" rx="2" opacity="0.85"><title>rhoai-3.2: 5</title></rect><text x="238.0" y="142.7" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">5</text><text x="238.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 238.0, 224.0)">3.2</text><rect x="262.0" y="159.3" width="40.0" height="50.7" fill="#7c3aed" rx="2" opacity="0.85"><title>rhoai-3.4.EA1: 4</title></rect><text x="282.0" y="155.3" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">4</text><text x="282.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 282.0, 224.0)">3.4.EA1</text><rect x="306.0" y="159.3" width="40.0" height="50.7" fill="#7c3aed" rx="2" opacity="0.85"><title>rhoai-2.23: 4</title></rect><text x="326.0" y="155.3" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">4</text><text x="326.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 326.0, 224.0)">2.23</text><rect x="350.0" y="172.0" width="40.0" height="38.0" fill="#7c3aed" rx="2" opacity="0.85"><title>rhoai-2.24: 3</title></rect><text x="370.0" y="168.0" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">3</text><text x="370.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 370.0, 224.0)">2.24</text><rect x="394.0" y="184.7" width="40.0" height="25.3" fill="#7c3aed" rx="2" opacity="0.85"><title>rhoai-3.3: 2</title></rect><text x="414.0" y="180.7" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">2</text><text x="414.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 414.0, 224.0)">3.3</text><rect x="438.0" y="197.3" width="40.0" height="12.7" fill="#7c3aed" rx="2" opacity="0.85"><title>3.5 GA RHAII RELEASE: 1</title></rect><text x="458.0" y="193.3" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">1</text><text x="458.0" y="224.0" text-anchor="middle" fill="var(--muted)" font-size="10" transform="rotate(-45, 458.0, 224.0)">3.5 GA R</text>
+    </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- COMPONENT TEAM TABLE -->
+<!-- ============================================================ -->
+<h2 id="team-table">Component Team Responsibility</h2>
+
+<table>
+  <thead>
+    <tr><th>Component Team</th><th>Bugs</th><th>% of Total</th><th>Highest Severity</th><th>Upstream Repo(s)</th><th>Example Keys</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>KServe / Model Serving</strong></td>
+      <td>29</td>
+      <td>22%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>kserve, odh-model-controller</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-88471, RHOAIENG-82376, RHOAIENG-78659</td>
+    </tr>
+<tr>
+      <td><strong>MaaS / Kuadrant / AI Gateway</strong></td>
+      <td>23</td>
+      <td>17%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>models-as-a-service, kuadrant-operator, ai-gateway</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-87929, RHOAIENG-85498, RHOAIENG-85487</td>
+    </tr>
+<tr>
+      <td><strong>AI Core Platform / Operator</strong></td>
+      <td>21</td>
+      <td>16%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>opendatahub-operator</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-88550, RHOAIENG-88547, RHOAIENG-85499</td>
+    </tr>
+<tr>
+      <td><strong>Model Registry / AI Hub</strong></td>
+      <td>15</td>
+      <td>11%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>model-registry-operator</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-87649, RHOAIENG-78053, RHOAIENG-75788</td>
+    </tr>
+<tr>
+      <td><strong>Workbenches / Notebooks</strong></td>
+      <td>13</td>
+      <td>10%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>workbenches-operator</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-87949, RHOAIENG-83691, RHOAIENG-79593</td>
+    </tr>
+<tr>
+      <td><strong>Gen AI</strong></td>
+      <td>10</td>
+      <td>8%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>gen-ai BFF/OGX</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-79716, RHOAIENG-77906, RHOAIENG-77605</td>
+    </tr>
+<tr>
+      <td><strong>Feature Store / Feast</strong></td>
+      <td>8</td>
+      <td>6%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>feast-module-operator</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-88591, RHOAIENG-81966, RHOAIENG-79331</td>
+    </tr>
+<tr>
+      <td><strong>MLflow</strong></td>
+      <td>5</td>
+      <td>4%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>mlflow-operator</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-77643, RHOAIENG-76588, RHOAIENG-72171</td>
+    </tr>
+<tr>
+      <td><strong>Pipelines / DSPA</strong></td>
+      <td>5</td>
+      <td>4%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>data-science-pipelines-operator</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-58177, RHOAIENG-33241, RHOAIENG-24702</td>
+    </tr>
+<tr>
+      <td><strong>Training</strong></td>
+      <td>2</td>
+      <td>2%</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td><code>training-operator, kueue</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-63021, RHOAIENG-35936</td>
+    </tr>
+<tr>
+      <td><strong>AutoML</strong></td>
+      <td>1</td>
+      <td>1%</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td><code>automl-operator</code></td>
+      <td style="font-size:0.8rem">RHOAIENG-73419</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!-- TABLE 2: PER-COMPONENT GAP ANALYSIS -->
+<!-- ============================================================ -->
+<h2 id="gap-analysis">Per-Component Gap Analysis</h2>
+<p>Does every component have a peer test on their repo?</p>
+
+<table>
+  <thead>
+    <tr><th>Upstream Repo</th><th>envtest?</th><th>Real RBAC?</th><th>CI?</th><th>Early-Gate?</th><th>Bugs</th><th>Key Gap</th><th>Suggested Fix</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>opendatahub-operator</strong></td>
+      <td><span class="badge badge-green">Yes (30 refs)</span></td>
+      <td><span class="badge badge-red">No &mdash; admin</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td>21</td>
+      <td>envtest runs as admin; CRD precondition tests only check own CRDs, not cross-component deps</td>
+      <td>Add non-admin envtest; add cross-component CRD ordering tests</td>
+    </tr>
+    <tr>
+      <td><strong>odh-model-controller</strong></td>
+      <td><span class="badge badge-green">Yes (24 refs)</span></td>
+      <td><span class="badge badge-red">No &mdash; admin</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-red">No</span></td>
+      <td>29</td>
+      <td>24 envtest refs but ALL run as cluster-admin; shipped ClusterRole never loaded as SA permissions</td>
+      <td>Add single test: <code>ctrl.NewManager(cfg)</code> with shipped ClusterRole (~15 lines Go); onboard to early-gate</td>
+    </tr>
+    <tr>
+      <td><strong>model-registry-operator</strong></td>
+      <td><span class="badge badge-green">Yes (13 refs)</span></td>
+      <td><span class="badge badge-red">No &mdash; admin</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-red">No</span></td>
+      <td>15</td>
+      <td>Never calls <code>ctrl.NewManager()</code> + <code>mgr.Start()</code>. Manager startup path completely untested. PR #571 removed RBAC with zero CI failure</td>
+      <td>Add manager startup test + finalizer deletion ordering test; onboard to Konflux + early-gate</td>
+    </tr>
+    <tr>
+      <td><strong>models-as-a-service</strong></td>
+      <td><span class="badge badge-red">No (0 refs)</span></td>
+      <td><span class="badge badge-gray">N/A</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td>23</td>
+      <td>Zero envtest despite being #2 bug source. EnvoyFilter/gateway config never validated pre-merge</td>
+      <td>Add envtest for controller startup; add static EnvoyFilter scoping lint</td>
+    </tr>
+    <tr>
+      <td><strong>feast-module-operator</strong></td>
+      <td><span class="badge badge-red">No (0 refs)</span></td>
+      <td><span class="badge badge-gray">N/A</span></td>
+      <td><span class="badge badge-amber">Minimal</span></td>
+      <td><span class="badge badge-red">No</span></td>
+      <td>8</td>
+      <td>Zero envtest. Operator RBAC never validated. CrashLoopBackOff on missing RBAC is undetectable</td>
+      <td>Add envtest suite from scratch; start with manager startup + RBAC test</td>
+    </tr>
+    <tr>
+      <td><strong>kuadrant-operator</strong></td>
+      <td><span class="badge badge-red">No (0 refs)</span></td>
+      <td><span class="badge badge-gray">N/A</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-red">No</span></td>
+      <td>(under MaaS)</td>
+      <td>External repo &mdash; no Konflux, no envtest, no early-gate. EnvoyFilter bleed is #1 bug class</td>
+      <td>Cross-org coordination needed; propose static EnvoyFilter lint as PR check</td>
+    </tr>
+    <tr>
+      <td><strong>kserve</strong></td>
+      <td><span class="badge badge-red">No (0 refs)</span></td>
+      <td><span class="badge badge-gray">N/A</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-red">No</span></td>
+      <td>29</td>
+      <td>Zero envtest. CRD validation and reconciler ordering bugs undetectable</td>
+      <td>Add envtest for CRD schema validation + reconciler ordering</td>
+    </tr>
+    <tr>
+      <td><strong>workbenches-operator</strong></td>
+      <td><span class="badge badge-green">Yes (8 refs)</span></td>
+      <td><span class="badge badge-red">No &mdash; admin</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td>13</td>
+      <td>Webhook conflict undetectable in isolation (cross-component). Good infra otherwise</td>
+      <td>Add webhook name uniqueness check; early-gate already onboarded</td>
+    </tr>
+    <tr>
+      <td><strong>mlflow-operator</strong></td>
+      <td><span class="badge badge-amber">Minimal (2 refs)</span></td>
+      <td><span class="badge badge-red">No</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-red">No</span></td>
+      <td>5</td>
+      <td>Barely any envtest. CRD schema mismatch and module dependency bugs undetected</td>
+      <td>Expand envtest to cover manager startup + CRD validation</td>
+    </tr>
+    <tr>
+      <td><strong>feast</strong> (Python)</td>
+      <td><span class="badge badge-gray">N/A</span></td>
+      <td><span class="badge badge-gray">N/A</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td><span class="badge badge-green">Yes</span></td>
+      <td>(under feast-operator)</td>
+      <td>Data format bugs (invalid tags) need unit tests</td>
+      <td>Add unit test validation for config values/tags</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Gap Summary</h3>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="number red">0/10</div><div class="label">repos run envtest with shipped ClusterRole</div></div>
+  <div class="stat-card"><div class="number red">0/10</div><div class="label">repos have consumer-facing contract tests</div></div>
+  <div class="stat-card"><div class="number red">4/10</div><div class="label">repos have zero envtest (52% of bugs)</div></div>
+  <div class="stat-card"><div class="number amber">4/10</div><div class="label">repos have early-gate onboarded</div></div>
+</div>
+
+<div class="callout red">
+  <strong>The #1 bug source by category (KServe/Model Serving, 29 bugs) and #2 (MaaS, 23 bugs) both have zero envtest</strong> despite having mature CI pipelines.
+</div>
+
+<!-- ============================================================ -->
+<!-- TABLE 3: PARITY -->
+<!-- ============================================================ -->
+<h2 id="parity">Cypress E2E &rarr; Backend Test Parity</h2>
+<p><em>The frontend is testing the backend before them.</em></p>
+
+<table>
+  <thead>
+    <tr><th>Feature Area</th><th>E2E Files</th><th>Upstream Repo(s) Exercised</th><th>Would Fail on Upstream Issue</th><th>Upstream Has Backend Test?</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Data Science Projects</td><td>25</td>
+      <td>workbenches-operator, odh-notebook-controller, opendatahub-operator, kserve, odh-model-controller</td>
+      <td>22 Yes, 3 Partial</td>
+      <td><span class="badge badge-red">No</span> &mdash; envtest exists but doesn't cover integration surfaces</td>
+    </tr>
+    <tr>
+      <td>Settings</td><td>19</td>
+      <td>opendatahub-operator, kserve, odh-model-controller, workbenches-operator</td>
+      <td>12 Yes, 7 Partial</td>
+      <td><span class="badge badge-red">No</span> &mdash; no test validates DSC config CR reconciliation from consumer perspective</td>
+    </tr>
+    <tr>
+      <td>Model Registry</td><td>8</td>
+      <td>model-registry-operator, kserve</td>
+      <td>8 Yes</td>
+      <td><span class="badge badge-red">No</span> &mdash; envtest exists but doesn't test manager startup or finalizer deletion</td>
+    </tr>
+    <tr>
+      <td>Model Training</td><td>6</td>
+      <td>training-operator, kuberay</td>
+      <td>6 Yes</td>
+      <td><span class="badge badge-gray">Unknown</span></td>
+    </tr>
+    <tr>
+      <td>Model Catalog</td><td>6</td>
+      <td>model-registry-operator, opendatahub-operator, kserve</td>
+      <td>3 Yes, 3 Partial</td>
+      <td><span class="badge badge-red">No</span> &mdash; catalog pod availability not tested upstream</td>
+    </tr>
+    <tr>
+      <td>MaaS</td><td>5</td>
+      <td>models-as-a-service, kuadrant-operator, ai-gateway</td>
+      <td>4 Yes, 1 Partial</td>
+      <td><span class="badge badge-red">No</span> &mdash; EnvoyFilter scoping, gateway health, subscription lifecycle untested</td>
+    </tr>
+    <tr>
+      <td>AutoML</td><td>5</td>
+      <td>automl-operator</td>
+      <td>5 Yes</td>
+      <td><span class="badge badge-gray">Unknown</span></td>
+    </tr>
+    <tr>
+      <td>Pipelines</td><td>4</td>
+      <td>data-science-pipelines-operator, mlflow-operator</td>
+      <td>4 Yes</td>
+      <td><span class="badge badge-amber">Partial</span> &mdash; DSPA has envtest but MLflow integration untested</td>
+    </tr>
+    <tr>
+      <td>Feature Store</td><td>3</td>
+      <td>feast-module-operator, workbenches-operator</td>
+      <td>3 Yes</td>
+      <td><span class="badge badge-red">No</span> &mdash; feast has no envtest at all</td>
+    </tr>
+    <tr>
+      <td>Gen AI</td><td>3</td>
+      <td>kserve, odh-model-controller, opendatahub-operator</td>
+      <td>1 Yes, 2 Partial</td>
+      <td><span class="badge badge-red">No</span></td>
+    </tr>
+    <tr>
+      <td>AutoRAG</td><td>3</td>
+      <td>autorag-operator</td>
+      <td>3 Yes</td>
+      <td><span class="badge badge-gray">Unknown</span></td>
+    </tr>
+    <tr>
+      <td>Other (11 files)</td><td>11</td>
+      <td>Various</td>
+      <td>8 Yes, 3 Partial</td>
+      <td><span class="badge badge-red">Mostly No</span></td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr style="font-weight:600; background:var(--table-header);">
+      <td>Totals</td><td>111</td><td>11+ upstream repos</td><td>82 (74%) Yes</td><td>0 repos have consumer-perspective tests</td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="callout red">
+  <strong>74% of our E2E tests are validating upstream operator behavior that no upstream team tests from a consumer perspective.</strong>
+</div>
+
+<!-- ============================================================ -->
+<!-- TABLE 4: RECLASSIFICATION -->
+<!-- ============================================================ -->
+<h2 id="reclassification">Bug Reclassification &amp; Detection Layers (Top 31)</h2>
+<p>Where would each bug actually be caught?</p>
+
+<table>
+  <thead>
+    <tr><th>Key</th><th>Summary</th><th>Detection Layer</th><th>Confidence</th><th>Why Not Caught Upstream</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>RHOAIENG-88591</td><td>Feast operator missing namespace label</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>No envtest validates label propagation to created namespaces</td></tr>
+    <tr><td>RHOAIENG-88550</td><td>Dashboard CR apply fails &mdash; deploymentMode not in CRD</td><td>CRD Schema</td><td><span class="badge badge-green">High</span></td><td>CRD schema not validated against actual CR fields</td></tr>
+    <tr><td>RHOAIENG-88547</td><td>DSC NotReady &mdash; Model Registry provisioning stuck</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>Reconciler ordering not tested from empty state</td></tr>
+    <tr><td>RHOAIENG-88471</td><td>LLMInferenceServiceConfigs missing on install</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>CRD registration not tested during fresh install</td></tr>
+    <tr><td>RHOAIENG-87949</td><td>Cannot start notebook server &mdash; 3.6-ea1</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>Notebook controller startup path untested with new version</td></tr>
+    <tr><td>RHOAIENG-87649</td><td>Model catalog pods missing on 3.6 install</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>No bootstrap-from-empty test</td></tr>
+    <tr><td>RHOAIENG-85499</td><td>DSC syncPlatformCR blocked by provisionComponent</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>Reconciler ordering dependency untested</td></tr>
+    <tr><td>RHOAIENG-85487</td><td>GatewayConfig.Status.Domain empty</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>CRD registration not tested during reconciliation</td></tr>
+    <tr><td>RHOAIENG-82376</td><td>odh-model-controller CrashLoop &mdash; missing RBAC</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>envtest runs as admin (17 suites, all cluster-admin)</td></tr>
+    <tr><td>RHOAIENG-83128</td><td>feast CrashLoop &mdash; Forbidden on notebooks.kubeflow.org</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>No envtest at all; RBAC invisible</td></tr>
+    <tr><td>RHOAIENG-79331</td><td>Feast CrashLoop &mdash; missing RBAC (repeat)</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>Same as 83128 &mdash; repeat proves gap is persistent</td></tr>
+    <tr><td>RHOAIENG-75788</td><td>MR RBAC regression &mdash; PR removed verbs</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>PR review + CI missed it; no RBAC validation test</td></tr>
+    <tr><td>RHOAIENG-78053</td><td>MR finalizer blocks ISVC deletion</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>Finalizer tested for creation only, not deletion ordering</td></tr>
+    <tr><td>RHOAIENG-66476</td><td>MR finalizer deadlock (repeat)</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>Same as 78053 &mdash; repeat bug</td></tr>
+    <tr><td>RHOAIENG-78060</td><td>TrustyAI stuck &mdash; no requeue</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>Never tested "CRD appears later" scenario</td></tr>
+    <tr><td>RHOAIENG-77786</td><td>TrustyAI self-heal failure (repeat)</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>Same pattern as 78060</td></tr>
+    <tr><td>RHOAIENG-78567</td><td>KServe CRDs not installed</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>CRDs always pre-installed in envtest</td></tr>
+    <tr><td>RHOAIENG-79036</td><td>DSC lookup failed</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>Only tests own CRDs, not cross-component</td></tr>
+    <tr><td>RHOAIENG-78659</td><td>KServe CRD validation rejected</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>CRD admission not tested with templated values</td></tr>
+    <tr><td>RHOAIENG-76563</td><td>AITenant finalizer deadlock</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>Finalizer creation path tested, not termination</td></tr>
+    <tr><td>RHOAIENG-72171</td><td>MLflow never Ready</td><td>envtest</td><td><span class="badge badge-green">High</span></td><td>No bootstrap-to-Ready test</td></tr>
+    <tr><td>RHOAIENG-75592</td><td>MaaS DSCI monitoring prerequisite</td><td>Operator Startup</td><td><span class="badge badge-green">High</span></td><td>Bootstrap tested on dev clusters only</td></tr>
+    <tr><td>RHOAIENG-71247</td><td>feast DynamoDB tag &mdash; invalid comma</td><td>Unit Test</td><td><span class="badge badge-green">High</span></td><td>No unit test for tag format</td></tr>
+    <tr><td>RHOAIENG-81966</td><td>FeatureStore namespace lacks labels</td><td>Runtime Integration</td><td><span class="badge badge-amber">Medium</span></td><td>Upstream doesn't know dashboard requires specific labels</td></tr>
+    <tr><td>RHOAIENG-84569</td><td>maas gateway OOM (post-fix)</td><td>Operator Startup</td><td><span class="badge badge-amber">Medium</span></td><td>OOM from config issue; no resource testing</td></tr>
+    <tr><td>RHOAIENG-81865</td><td>data-science-gateway OOM &mdash; EnvoyFilter</td><td>Operator Startup</td><td><span class="badge badge-amber">Medium</span></td><td>Depends on Istio version flag</td></tr>
+    <tr><td>RHOAIENG-77643</td><td>MLflow not created &mdash; module dep</td><td>Operator Startup</td><td><span class="badge badge-amber">Medium</span></td><td>Module dependency chain untested</td></tr>
+    <tr><td>RHOAIENG-76548</td><td>MaaS bootstrap deadlock</td><td>envtest</td><td><span class="badge badge-amber">Medium</span></td><td>Post-cleanup re-creation untested</td></tr>
+    <tr><td>RHOAIENG-80043</td><td>EnvoyFilter leak causing 401</td><td>Runtime Integration</td><td><span class="badge badge-red">Low</span></td><td>Cross-component: requires multi-gateway deploy</td></tr>
+    <tr><td>RHOAIENG-79593</td><td>Dual webhook registration</td><td>Runtime Integration</td><td><span class="badge badge-red">Low</span></td><td>Cross-component: two operators, neither sees the other</td></tr>
+    <tr><td>RHOAIENG-79227</td><td>Wasm EnvoyFilter memory leak</td><td>Operator Startup</td><td><span class="badge badge-red">Low</span></td><td>Requires production-like load testing</td></tr>
+    <tr><td>RHOAIENG-75666</td><td>MaaS prefix mismatch</td><td>Runtime Integration</td><td><span class="badge badge-red">Low</span></td><td>Naming convention agreed verbally, never codified</td></tr>
+  </tbody>
+</table>
+
+<h3>Confidence Summary</h3>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="number green">23</div><div class="label">High confidence (72%) &mdash; catchable with known techniques</div></div>
+  <div class="stat-card"><div class="number amber">5</div><div class="label">Medium confidence (16%) &mdash; requires non-trivial test setup</div></div>
+  <div class="stat-card"><div class="number red">4</div><div class="label">Low confidence (12%) &mdash; cross-component or load-dependent</div></div>
+</div>
+
+<h3>Low-Hanging Fruit: 15+ bugs fixable with 10&ndash;25 lines of Go</h3>
+
+<p>The single biggest pattern across all repos: <strong>run envtest with the shipped ClusterRole instead of admin access.</strong> This alone catches 6 RBAC bugs across 4 repos. The fix is ~15 lines of Go per repo.</p>
+
+<table>
+  <thead>
+    <tr><th>Fix Pattern</th><th>Repos Affected</th><th>Bugs Caught</th><th>Effort</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Non-admin RBAC envtest</strong></td><td>odh-model-controller, feast, model-registry-operator, opendatahub-operator</td><td>6</td><td>~15 lines Go per repo</td></tr>
+    <tr><td><strong>Finalizer deletion ordering test</strong></td><td>model-registry-operator, kuadrant-operator</td><td>4</td><td>~20 lines Go per repo</td></tr>
+    <tr><td><strong>Delayed CRD availability / requeue test</strong></td><td>opendatahub-operator</td><td>3</td><td>~20 lines Go</td></tr>
+    <tr><td><strong>Bootstrap-from-empty test</strong></td><td>model-registry-operator, mlflow-operator, MaaS</td><td>3</td><td>~25 lines Go per repo</td></tr>
+    <tr><td><strong>CRD admission with real values</strong></td><td>kserve</td><td>1</td><td>~10 lines Go</td></tr>
+    <tr><td><strong>Tag/format unit test</strong></td><td>feast</td><td>1</td><td>~5 lines Python</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!-- TABLE 5: AI FACTORY -->
+<!-- ============================================================ -->
+<h2 id="ai-factory">Connection to AI Factory</h2>
+<p><a href="https://issues.redhat.com/browse/RHOAIENG-87641">RHOAIENG-87641</a>, <a href="https://issues.redhat.com/browse/RHOAIENG-75513">RHOAIENG-75513</a></p>
+
+<p>The AI Factory initiative aims to enable many small PRs, parallel agents, and fast merge cycles. Upstream bugs that block the nightly are the #1 blocker to this model &mdash; each bug creates a 3&ndash;10 day feedback loop.</p>
+
+<table>
+  <thead>
+    <tr><th>AI Factory Goal</th><th>Current Blocker</th><th>Gap Analysis Finding</th><th>Proposed Solution</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Fast merge cycles</td><td>Nightly blocked ~1/3 of days by upstream bugs</td><td>74% of blocking bugs are catchable at operator startup/envtest</td><td>Push envtest recipes to upstream repos</td></tr>
+    <tr><td>Many small PRs</td><td>CI queue backs up when nightly is broken</td><td>82/111 E2E tests fail on upstream issues, not dashboard bugs</td><td>Separate deployment validation from UI testing</td></tr>
+    <tr><td>Reliable signal</td><td><code>cypress_found_bug</code> label mixes upstream, test-infra, and product bugs</td><td>68% upstream, 16% test infra, 8% product, 8% build</td><td>Split into distinct labels</td></tr>
+  </tbody>
+</table>
+
+<h3>Proposed AI Factory Workstreams</h3>
+
+<div class="phase-card">
+  <h4>1. Upstream envtest recipe generator (AI-powered, OpenAI-compatible)</h4>
+  <p>An AI-powered skill (OpenAI-compatible) that analyzes an upstream repo, identifies missing envtest coverage, and generates Go test recipes (non-admin RBAC, finalizer ordering, bootstrap). This is the highest-leverage automation: 15+ bugs &times; ~15 lines each = a skill that can generate fixes at scale.</p>
+</div>
+
+<div class="phase-card">
+  <h4>2. <code>cypress_found_bug</code> triage skill (AI-powered, OpenAI-compatible)</h4>
+  <p>An AI-powered skill (OpenAI-compatible) that takes a new <code>cypress_found_bug</code> issue, classifies it (upstream/test-infra/product/build), identifies the root component, checks if the upstream repo has a test that should have caught it, and suggests the fix. This replaces the 15&ndash;60 min manual triage step.</p>
+</div>
+
+<div class="phase-card">
+  <h4>3. E2E &rarr; backend test parity tracker</h4>
+  <p>A periodic report (or skill) that maps Cypress E2E tests to upstream backend tests and flags gaps. The parity table in this document is the v1 of this.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- FULL BUG LIST -->
+<!-- ============================================================ -->
+<h2 id="full-list">Full Upstream Bug List (132 issues)</h2>
+<p>All upstream component bugs from <code>cypress_found_bug</code>, sorted by date (newest first).</p>
+
+<div class="overflow-x">
+<table>
+  <thead>
+    <tr><th>Key</th><th>Summary</th><th>Component Team</th><th>Priority</th><th>Created</th><th>Fix Version</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-88591">RHOAIENG-88591</a></td>
+      <td>BUG: Feast operator does not add opendatahub.io/feast=true label to namespace after Featur...</td>
+      <td style="white-space:nowrap">Feature Store / Feast</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-26</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-88550">RHOAIENG-88550</a></td>
+      <td>BUG: Dashboard CR apply fails with .spec.deploymentMode not in CRD schema; DSC stays Not R...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-26</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-88547">RHOAIENG-88547</a></td>
+      <td>Model registry: DSC is in a NotReady state, Model registry provisioning failed</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-26</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-88471">RHOAIENG-88471</a></td>
+      <td>e2e failure LLMInferenceServiceConfigs missing on installation</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-25</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-87949">RHOAIENG-87949</a></td>
+      <td>Cannot start a notebook server - 3.6-ea1</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-24</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-87929">RHOAIENG-87929</a></td>
+      <td>E2E: TestMaaSPolicies and TestMaaSSubscriptions Failing looking for 1000 but found 1,000</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-08-24</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-87649">RHOAIENG-87649</a></td>
+      <td>[ai-hub] Model catalog pods are missing on a new 3.6 install — catalog fails to load</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-21</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-85499">RHOAIENG-85499</a></td>
+      <td>BUG: DSC syncPlatformCR deferred apply is blocked by provisionComponents error, creating s...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-08-19</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-85498">RHOAIENG-85498</a></td>
+      <td>BUG: GatewayConfig createDashboardRedirects fails with NoKindMatchError when Dashboard CRD...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-08-19</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-85487">RHOAIENG-85487</a></td>
+      <td>RHOAI 3.6-ea.1 ModelRegistry not Ready — GatewayConfig.Status.Domain is empty</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-19</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-84569">RHOAIENG-84569</a></td>
+      <td>maas-default-gateway OOMKilled / CrashLoopBackOff on dash-e2e-rhoai blocks 3.5 GA MaaS Cyp...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-08-17</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-83691">RHOAIENG-83691</a></td>
+      <td>E2E: workbench NN-1 image versions dropdown failure (testWorkbenchImages)</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-08-13</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-83128">RHOAIENG-83128</a></td>
+      <td>feast-operator-controller-manager CrashLoopBackOff due to Forbidden on notebooks.kubeflow....</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-12</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-82376">RHOAIENG-82376</a></td>
+      <td>odh-model-controller CrashLoopBackOff due to missing RBAC on apiservers.config.openshift.i...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-10</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-81966">RHOAIENG-81966</a></td>
+      <td>Namespace created via FeatureStore CRD lacks dashboard labels and is not visible in Data S...</td>
+      <td style="white-space:nowrap">Feature Store / Feast</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-06</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-81865">RHOAIENG-81865</a></td>
+      <td>data-science-gateway OOM due to Kuadrant EnvoyFilter leakage — targetRefs ignored by Istio...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-08-06</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-80043">RHOAIENG-80043</a></td>
+      <td>BUG: IPP/Kuadrant EnvoyFilters leak onto data-science-gateway causing 401 on dashboard POS...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-31</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-79716">RHOAIENG-79716</a></td>
+      <td>Fix Gen AI E2E test: update stale data-testid for model selector dropdown</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-blue">Normal</span></td>
+      <td style="white-space:nowrap">2026-07-29</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-79593">RHOAIENG-79593</a></td>
+      <td>Notebook CREATE/UPDATE fails as rhods-operator and workbenches-operator both register the ...</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-29</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-79331">RHOAIENG-79331</a></td>
+      <td>BUG: Feast operator controller-manager CrashLoopBackOff — missing RBAC for apiservers.conf...</td>
+      <td style="white-space:nowrap">Feature Store / Feast</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-28</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-79227">RHOAIENG-79227</a></td>
+      <td>BUG: data-science-gateway OOMKilled — Kuadrant Wasm EnvoyFilter regeneration leak under Ma...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-27</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-79036">RHOAIENG-79036</a></td>
+      <td>DataScienceCluster: failed to lookup object opendatahub/odh-workbenches-config</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-24</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-78659">RHOAIENG-78659</a></td>
+      <td>Kserve fails to reach Ready in 3.5 nightly: CRD validation rejected</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-blue">Normal</span></td>
+      <td style="white-space:nowrap">2026-07-22</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-78567">RHOAIENG-78567</a></td>
+      <td>BUG: KServe CRDs not installed on fresh cluster deployment — operator reconciler ordering ...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-22</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-78060">RHOAIENG-78060</a></td>
+      <td>TrustyAI stuck Not Ready after ISVC CRD race — no requeue after precondition failure</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-20</td>
+      <td style="font-size:0.8rem">3.5 GA RHAII RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-78053">RHOAIENG-78053</a></td>
+      <td>Model Registry finalizer blocks InferenceService deletion, causing namespace cleanup timeo...</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-20</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-77906">RHOAIENG-77906</a></td>
+      <td>BUG: odh-dashboard-modules service account missing ClusterRole for pgvector deployment man...</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-17</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-77786">RHOAIENG-77786</a></td>
+      <td>TrustyAI controller does not self-heal after InferenceServices CRD becomes available</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-16</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-77643">RHOAIENG-77643</a></td>
+      <td>MLflow tracking server deployment not created due to MLflowOperator module dependency</td>
+      <td style="white-space:nowrap">MLflow</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-16</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-77605">RHOAIENG-77605</a></td>
+      <td>BUG: Gen-AI dashboard fails to start in Dash-E2E-RHOAI — protobuf duplicate-registration p...</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-07-16</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-76633">RHOAIENG-76633</a></td>
+      <td>RHOAI v3.5.0-ea.2 operator deployment failure in nightly build #1</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-14</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-76600">RHOAIENG-76600</a></td>
+      <td>BUG: OGX server fails to start — missing --insecure flag after upstream TLS enforcement (P...</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-07-14</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-76588">RHOAIENG-76588</a></td>
+      <td>BUG: testMlflowExperiments failing — MLflow CR not automatically created on nightly cluste...</td>
+      <td style="white-space:nowrap">MLflow</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-14</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-76587">RHOAIENG-76587</a></td>
+      <td>BUG: testDataCollection failing — disableTracking missing from OdhDashboardConfig CR on ni...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-14</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-76563">RHOAIENG-76563</a></td>
+      <td>AITenant CR stuck in Terminating phase - finalizer deadlock blocks DSC readiness</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-14</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-76548">RHOAIENG-76548</a></td>
+      <td>MaaS Config CR bootstrap deadlock after nightly cleanup causes DSC health check failure</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-14</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-76305">RHOAIENG-76305</a></td>
+      <td>Hardware profile tolerations/nodeSelector not injected into InferenceService after webhook...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-13</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-75788">RHOAIENG-75788</a></td>
+      <td>Model Registry operator RBAC regression: PR #571 removed list/watch verbs for groups.user....</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-09</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-75671">RHOAIENG-75671</a></td>
+      <td>Model Catalog CrashLoopBackOff: duplicate label 'Red Hat' in sources.yaml</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-08</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-75666">RHOAIENG-75666</a></td>
+      <td>MaaS subscription controller expects maas- prefix on HTTPRoute name but ai-gateway-payload...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-08</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-75592">RHOAIENG-75592</a></td>
+      <td>Dashboard nightly e2e blocked: MaaS DSCI monitoring prerequisite check fails on nightly cl...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-08</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-75591">RHOAIENG-75591</a></td>
+      <td>Dashboard nightly e2e blocked: MaaS namespace separation moves maas-db-config to redhat-ai...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-07-08</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-75511">RHOAIENG-75511</a></td>
+      <td>fix: payload-processing NetworkPolicy blocks ext_proc traffic from maas-default-gateway </td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-gray">Undefined</span></td>
+      <td style="white-space:nowrap">2026-07-07</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-73419">RHOAIENG-73419</a></td>
+      <td>AutoML file explorer search input not rendering after CSV upload</td>
+      <td style="white-space:nowrap">AutoML</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-07-03</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-72339">RHOAIENG-72339</a></td>
+      <td>Feature Store e2e test fails with feature count mismatch on overview metrics card (16 vs 2...</td>
+      <td style="white-space:nowrap">Feature Store / Feast</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-06-30</td>
+      <td style="font-size:0.8rem">3.5 EA2 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-72171">RHOAIENG-72171</a></td>
+      <td>mlflowoperator component never becomes Ready in latest ODH-Nightly </td>
+      <td style="white-space:nowrap">MLflow</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-06-29</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-71612">RHOAIENG-71612</a></td>
+      <td>Update ods-ci configure_maas_gateway.sh with authorino-tls-bootstrap and Authorino TLS set...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-06-25</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-71247">RHOAIENG-71247</a></td>
+      <td>feast apply fails with DynamoDB ValidationException on CreateTable due to invalid comma in...</td>
+      <td style="white-space:nowrap">Feature Store / Feast</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-06-24</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-71132">RHOAIENG-71132</a></td>
+      <td>Feast feast-apply init container crashes with S3RegistryBucketForbiddenAccess</td>
+      <td style="white-space:nowrap">Feature Store / Feast</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-06-24</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-70441">RHOAIENG-70441</a></td>
+      <td>rhods-dashboard CrashLoopBackOff: missing tslib module in production image after PR #7958 ...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-06-22</td>
+      <td style="font-size:0.8rem">3.5 EA2 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-68937">RHOAIENG-68937</a></td>
+      <td>data-science-gateway OOMKills under MaaS test load due to Kuadrant Wasm plugin memory leak</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-06-15</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-68936">RHOAIENG-68936</a></td>
+      <td>Fix cleanup gaps in testMaaSSubscriptions E2E test causing orphaned MaaS cluster resources</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-06-15</td>
+      <td style="font-size:0.8rem">3.5 EA2 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-67807">RHOAIENG-67807</a></td>
+      <td>MaaS e2e test failure: page loads briefly then errors out, subscriptions and policies reso...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-06-10</td>
+      <td style="font-size:0.8rem">3.5 EA2 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-66476">RHOAIENG-66476</a></td>
+      <td>Dev - Model Registry finalizer deadlock: InferenceService stuck in Terminating when ModelR...</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-06-04</td>
+      <td style="font-size:0.8rem">3.5 EA2 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-66463">RHOAIENG-66463</a></td>
+      <td>Testing - Model Registry finalizer deadlock: InferenceService stuck in Terminating when Mo...</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-06-04</td>
+      <td style="font-size:0.8rem">3.5 EA2 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-65075">RHOAIENG-65075</a></td>
+      <td>Cannot read properties of null (reading 'postMessage') uncaught exception in Model Registr...</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-blue">Normal</span></td>
+      <td style="white-space:nowrap">2026-05-28</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-63021">RHOAIENG-63021</a></td>
+      <td>Dashboard fails to pause/resume Kueue-managed workloads on Kueue 1.3.x (v1beta2 CEL valida...</td>
+      <td style="white-space:nowrap">Training</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-05-18</td>
+      <td style="font-size:0.8rem">rhoai-3.3.3</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-62962">RHOAIENG-62962</a></td>
+      <td>[Cypress e2e] testWorkbenchStorageClasses fails: regex /^sc-rwo\b/ matches both sc-rwo and...</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-05-18</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-62944">RHOAIENG-62944</a></td>
+      <td>[Cypress e2e] testMaaSSubscriptions test takes so much time to run </td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-05-18</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-62532">RHOAIENG-62532</a></td>
+      <td>Hardware profile E2E tests fail after PR #7246 changed dropdown option label format (Reque...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-05-14</td>
+      <td style="font-size:0.8rem">3.5 EA1 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-62509">RHOAIENG-62509</a></td>
+      <td>ods-ci label mismatch blocks RHOAI operator deployment: models-as-a-service vs modelsasser...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-05-14</td>
+      <td style="font-size:0.8rem">3.5 EA1 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-62488">RHOAIENG-62488</a></td>
+      <td>testMlflowExperiments: execCurlInMlflowPod uses unprefixed API paths, broken since MLflow ...</td>
+      <td style="white-space:nowrap">MLflow</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-05-13</td>
+      <td style="font-size:0.8rem">3.5 EA1 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-62487">RHOAIENG-62487</a></td>
+      <td>OGX manifests are missing in rhoai-3.5-ea.1</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-05-13</td>
+      <td style="font-size:0.8rem">3.5 EA1 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-61660">RHOAIENG-61660</a></td>
+      <td>maas-controller self-referencing finalizer deadlocks namespace deletion</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-05-11</td>
+      <td style="font-size:0.8rem">3.5 EA1 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-61366">RHOAIENG-61366</a></td>
+      <td>Hardware profile still shows in the grid right after it's deletion</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-05-07</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-61204">RHOAIENG-61204</a></td>
+      <td>KServe ModuleHandler implementation (opendatahub-operator)</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-05-06</td>
+      <td style="font-size:0.8rem">3.5 GA RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-61026">RHOAIENG-61026</a></td>
+      <td>Gen AI tests failing in 3.5.0-ea1</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-05-05</td>
+      <td style="font-size:0.8rem">3.5 EA1 RHOAI RELEASE</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-59862">RHOAIENG-59862</a></td>
+      <td>Gen AI studio Tech preview shows randomly and then the Dashboard crashes to a ChunkLoadErr...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-04-26</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-59798">RHOAIENG-59798</a></td>
+      <td>RHOAI 3.3.2, and OCP 4.20.16. Once upgrading the OCP to 4.21.10, I can see two duplicated ...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-gray">Undefined</span></td>
+      <td style="white-space:nowrap">2026-04-24</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-59424">RHOAIENG-59424</a></td>
+      <td>ImagePullBackOff when deploying a workbench (but then it fixes itself)</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-04-23</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-58177">RHOAIENG-58177</a></td>
+      <td>Crashloop back-off when creating a DSPA</td>
+      <td style="white-space:nowrap">Pipelines / DSPA</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-04-14</td>
+      <td style="font-size:0.8rem">rhoai-3.4</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-57599">RHOAIENG-57599</a></td>
+      <td>Error creating workbench due to mutating webhook err</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-04-10</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-57579">RHOAIENG-57579</a></td>
+      <td>Feast Operator deployment fails due to duplicate RELATED_IMAGE_CRON_JOB env var in control...</td>
+      <td style="white-space:nowrap">Feature Store / Feast</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-04-10</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-57297">RHOAIENG-57297</a></td>
+      <td>Dashboard resource url's are incorrect</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-04-08</td>
+      <td style="font-size:0.8rem">rhoai-3.4</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-56220">RHOAIENG-56220</a></td>
+      <td>Update the gen-ai BFF to align with LlamaStack 0.6.x breaking changes</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-04-01</td>
+      <td style="font-size:0.8rem">rhoai-3.4</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-55730">RHOAIENG-55730</a></td>
+      <td>BUG: model-serving-api deployment created with incorrect placeholder image controller:late...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-03-27</td>
+      <td style="font-size:0.8rem">rhoai-3.4</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-55047">RHOAIENG-55047</a></td>
+      <td>BUG: KServe fails to deploy - llminferenceserviceconfigs CRD invalid, odh-model-controller...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-03-25</td>
+      <td style="font-size:0.8rem">rhoai-3.4</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-53704">RHOAIENG-53704</a></td>
+      <td>enable/disable model catalog sources - cypress e2e test failure</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-03-16</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-53410">RHOAIENG-53410</a></td>
+      <td>maas-api CrashLoopBackOff due to missing maas-db-config secret</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-03-16</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-52179">RHOAIENG-52179</a></td>
+      <td>Named query field validation rejects model artifact property paths, crash-looping the cata...</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-03-06</td>
+      <td style="font-size:0.8rem">rhoai-3.4.EA2</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-50669">RHOAIENG-50669</a></td>
+      <td>[Product bug] Data sources in Feature store doesn't show up </td>
+      <td style="white-space:nowrap">Feature Store / Feast</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-02-24</td>
+      <td style="font-size:0.8rem">rhoai-3.4.EA1</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-50666">RHOAIENG-50666</a></td>
+      <td>[Product bug] Deployment takes time to get in "Ready" state after deploying model with S3 ...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-02-24</td>
+      <td style="font-size:0.8rem">rhoai-3.4.EA1</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-50100">RHOAIENG-50100</a></td>
+      <td>gen-ai-ui container is in CrashLoopBackOff</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2026-02-18</td>
+      <td style="font-size:0.8rem">rhoai-3.4.EA1</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-49260">RHOAIENG-49260</a></td>
+      <td>MLFlow card missing from Explore view</td>
+      <td style="white-space:nowrap">MLflow</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2026-02-11</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-49259">RHOAIENG-49259</a></td>
+      <td>[Cypress-e2e] GenAI e2e tests flaking</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-02-11</td>
+      <td style="font-size:0.8rem">rhoai-3.4.EA1</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-44393">RHOAIENG-44393</a></td>
+      <td>Event logs not updating when there are multiple workbenches</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-01-08</td>
+      <td style="font-size:0.8rem">rhoai-3.3</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-44217">RHOAIENG-44217</a></td>
+      <td>Pipeline server returns 502 Bad Gateway - "Error communicating with pipeline server" inter...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2026-01-07</td>
+      <td style="font-size:0.8rem">rhoai-3.3</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-42334">RHOAIENG-42334</a></td>
+      <td>Models are stuck in 'Starting' start on the latest rhoai-nightly (17th December 2025)</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-12-17</td>
+      <td style="font-size:0.8rem">rhoai-3.2</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-41634">RHOAIENG-41634</a></td>
+      <td>Can't create a Playground</td>
+      <td style="white-space:nowrap">Gen AI</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-12-10</td>
+      <td style="font-size:0.8rem">rhoai-3.2</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-40654">RHOAIENG-40654</a></td>
+      <td>500 Internal Error accessing AI Hub - Catalog</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-12-02</td>
+      <td style="font-size:0.8rem">rhoai-3.2</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-38766">RHOAIENG-38766</a></td>
+      <td>Dashboard takes 7-8 (approx) mins to become Ready after a clean install of the Operator in...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2025-11-13</td>
+      <td style="font-size:0.8rem">rhoai-3.2</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-38674">RHOAIENG-38674</a></td>
+      <td>Models are stuck in 'Starting' state on the latest odh-nightly (12th November 2025)</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-11-12</td>
+      <td style="font-size:0.8rem">rhoai-3.2</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-35936">RHOAIENG-35936</a></td>
+      <td>Workload Metrics - 404</td>
+      <td style="white-space:nowrap">Training</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-10-13</td>
+      <td style="font-size:0.8rem">rhoai-3.0</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-35930">RHOAIENG-35930</a></td>
+      <td>ODH-Nightly Failing -  error: resource mapping not found for name: "default-dsc" namespace...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-10-13</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-35577">RHOAIENG-35577</a></td>
+      <td>Error accessing Models - internal error: system:serviceaccount:<model-name>:default has no...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-10-06</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-35572">RHOAIENG-35572</a></td>
+      <td>'An error occurred' - creating OpenVINO Model Server Models</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-10-06</td>
+      <td style="font-size:0.8rem">rhoai-2.25.next</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-35373">RHOAIENG-35373</a></td>
+      <td>Kserve deployment failing ODH-Nightly builds caused Build Process Inconsistencies</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-10-03</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-35047">RHOAIENG-35047</a></td>
+      <td>ODH-Nightly: unable to retrieve the complete list of server APIs: authorino.kuadrant.io/v1...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-09-28</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-34893">RHOAIENG-34893</a></td>
+      <td>Model Registry & Catalog routes not available in RHOAI</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-09-24</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-34373">RHOAIENG-34373</a></td>
+      <td>ODH failed to lookup object /odh-gateway-class: no matches for kind "GatewayClass" in vers...</td>
+      <td style="white-space:nowrap">MaaS / Kuadrant / AI Gateway</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-09-17</td>
+      <td style="font-size:0.8rem">rhoai-2.25</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-34180">RHOAIENG-34180</a></td>
+      <td>odh-model-controller crashlooping on latest odh-nightly</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-09-15</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-33688">RHOAIENG-33688</a></td>
+      <td>[2.25.2] Notebooks - Administration tab not loading (404 error on the backend)</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-09-05</td>
+      <td style="font-size:0.8rem">rhoai-2.25.2</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-33610">RHOAIENG-33610</a></td>
+      <td>ODH Nightly failed: no matches for kind ServiceMesh in version services.platform.opendatah...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-09-04</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-33609">RHOAIENG-33609</a></td>
+      <td>Standalone notebook failed to start: Unable to handle OAuthClient creation</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2025-09-04</td>
+      <td style="font-size:0.8rem">rhoai-2.25.1</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-33246">RHOAIENG-33246</a></td>
+      <td>default-catalog.yaml not available</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-08-29</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-33241">RHOAIENG-33241</a></td>
+      <td>KFP launcher v2 crashes (nil-pointer in PublishExecution) causing pipeline run failure</td>
+      <td style="white-space:nowrap">Pipelines / DSPA</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-08-29</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-32764">RHOAIENG-32764</a></td>
+      <td>Kserve deployment failing (ODH-Nightly 2.25)</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-08-25</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-32763">RHOAIENG-32763</a></td>
+      <td>ModelMesh Serving not running on latest 2.24</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-08-25</td>
+      <td style="font-size:0.8rem">rhoai-2.24</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-32209">RHOAIENG-32209</a></td>
+      <td>ODH deployment failure: Failed to watch components.platform.opendatahub.io/v1alpha1</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-blue">Normal</span></td>
+      <td style="white-space:nowrap">2025-08-14</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-31085">RHOAIENG-31085</a></td>
+      <td>[odh-nightly]unable to deploy model with oci image </td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-07-31</td>
+      <td style="font-size:0.8rem">rhoai-2.24</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-30799">RHOAIENG-30799</a></td>
+      <td>Error creating model server: failed to call https://kserve-webhook-server-service.opendata...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-07-29</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-30376">RHOAIENG-30376</a></td>
+      <td>[ODH] Single Models are not deploying - storage-initializer argument list too long</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-07-23</td>
+      <td style="font-size:0.8rem">rhoai-2.24</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-29979">RHOAIENG-29979</a></td>
+      <td>ODH - Workbenches failing to start due to Back-off pulling image "image-registry.openshift...</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-07-17</td>
+      <td style="font-size:0.8rem">rhoai-2.23</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-29977">RHOAIENG-29977</a></td>
+      <td>TASK: Rollback PR #4264 changes for Model serving tests due to cypress retry failures</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-blue">Normal</span></td>
+      <td style="white-space:nowrap">2025-07-17</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-29747">RHOAIENG-29747</a></td>
+      <td>Single Model Serving Tests - findModelServerName - Maintenance</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-07-17</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-29649">RHOAIENG-29649</a></td>
+      <td>ODH failed calling webhook \"dscinitialization-validator.opendatahub.io\"</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-07-16</td>
+      <td style="font-size:0.8rem">rhoai-2.23</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-29409">RHOAIENG-29409</a></td>
+      <td>Single Serving Platform disabled by default in after upgrading to 2.19.2</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-gray">Minor</span></td>
+      <td style="white-space:nowrap">2025-07-14</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-29405">RHOAIENG-29405</a></td>
+      <td>No matches for kind Notebook in version kubeflow.org/v1</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-07-14</td>
+      <td style="font-size:0.8rem">rhoai-2.23</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-29340">RHOAIENG-29340</a></td>
+      <td>InferenceService pods not created due to invalid NetworkAttachmentDefinition in test names...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-07-11</td>
+      <td style="font-size:0.8rem">rhoai-2.23</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-27761">RHOAIENG-27761</a></td>
+      <td>Broken URLs in ODH Dashboard Manifests</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2025-06-18</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-27609">RHOAIENG-27609</a></td>
+      <td>Model registry status is not updating</td>
+      <td style="white-space:nowrap">Model Registry / AI Hub</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2025-06-16</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-25085">RHOAIENG-25085</a></td>
+      <td>ODH-Nightly: spec.applicationsNamespace: Invalid value: "string"</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-05-07</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-24702">RHOAIENG-24702</a></td>
+      <td>Pipeline Runs fail on RHOAI 2.21 after enabling CGO_ENABLED=1 in the build</td>
+      <td style="white-space:nowrap">Pipelines / DSPA</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-05-01</td>
+      <td style="font-size:0.8rem">rhoai-2.21</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-24350">RHOAIENG-24350</a></td>
+      <td>Pipelines - 403 Forbidden Displaying to Admin Users</td>
+      <td style="white-space:nowrap">Pipelines / DSPA</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-04-23</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-23649">RHOAIENG-23649</a></td>
+      <td>ODH-Nightly deployment - Components certs not found</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2025-04-14</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-23442">RHOAIENG-23442</a></td>
+      <td>Multi Models are Failing to Deploy on latest 2.20 Build (failed container ovms/ovms-adapte...</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-04-09</td>
+      <td style="font-size:0.8rem">rhoai-2.22</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-22456">RHOAIENG-22456</a></td>
+      <td>Workbenches - ImagePullBackOff Error when 1+ Workbenches are created under the same Projec...</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-red">Blocker</span></td>
+      <td style="white-space:nowrap">2025-03-26</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-21662">RHOAIENG-21662</a></td>
+      <td>Model Creation - Single Model - Error creating model server</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-03-14</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-20642">RHOAIENG-20642</a></td>
+      <td>Pipelines going into Failed State</td>
+      <td style="white-space:nowrap">Pipelines / DSPA</td>
+      <td><span class="badge badge-red">Critical</span></td>
+      <td style="white-space:nowrap">2025-02-28</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-19907">RHOAIENG-19907</a></td>
+      <td>An error occurred - Cannot read properties of undefined (reading 'some') displays on every...</td>
+      <td style="white-space:nowrap">AI Core Platform / Operator</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2025-02-13</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-19280">RHOAIENG-19280</a></td>
+      <td>Workbench status is not updating</td>
+      <td style="white-space:nowrap">Workbenches / Notebooks</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2025-02-04</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+<tr>
+      <td><a href="https://redhat.atlassian.net/browse/RHOAIENG-18579">RHOAIENG-18579</a></td>
+      <td>Model Serving - Errors creating Models</td>
+      <td style="white-space:nowrap">KServe / Model Serving</td>
+      <td><span class="badge badge-amber">Major</span></td>
+      <td style="white-space:nowrap">2025-01-23</td>
+      <td style="font-size:0.8rem">&mdash;</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+</body>
+</html>
