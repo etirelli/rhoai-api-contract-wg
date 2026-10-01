@@ -2,11 +2,15 @@
 
 ## Pilot Architecture and Delivery Proposal
 
-- **Status:** Working-group proposal
+- **Status:** Target architecture proposal; Model Catalog pilot awaiting approval
 - **Working repository name:** `api-contract-central`
-- **Updated:** 2026-09-28
+- **Updated:** 2026-10-01
 
-> **Pilot decision artifact:** [Model Registry–Dashboard API Contract Pilot](../pilot/model-registry-dashboard.md)
+> **Source of truth:** The [one-page stakeholder brief](../stakeholder-brief.md) defines current
+> scope, representatives, proposed dates, and success criteria. This proposal elaborates the
+> operating model; the first slice is Model Catalog–Dashboard, proposed for October 5–16, 2026.
+
+> **Pilot detail:** [Model Catalog–Dashboard API Contract Pilot](../pilot/model-registry-dashboard.md)
 
 > **Charter:** Help RHOAI component teams own compatibility guarantees for the APIs they expose,
 > and detect incompatible changes before broad integration or release validation finds them late.
@@ -18,7 +22,8 @@ specifications.
 
 - Each component team keeps its real API definition and provider tests in its own repository.
 - Dashboard and other consumers record the specific behavior they depend on in their repositories.
-- The central repository records where those artifacts live and supplies common checks.
+- The API Contract testing infrastructure records where those artifacts live and supplies shared
+  compatibility policy and common checks through the proposed central repository.
 - A small GitHub Action runs those checks in the component's pull request.
 - If a change is compatible, the pull request proceeds.
 - If a change is unexpectedly incompatible, the pull request fails with a useful explanation.
@@ -27,14 +32,19 @@ specifications.
   the full behavior alone.
 
 The important boundary is ownership: the component team owns the promise its API makes. The
-working group owns the shared rules and tooling. Dashboard is a named consumer, not the default
-owner of proving every provider API is safe.
+working group governs shared rules and adoption; the API Contract testing infrastructure supplies
+the policy, tooling, and pointer catalog. Dashboard is a named consumer, not the default owner of
+proving every provider API is safe.
+
+The flow below describes the target enforcement model. The first pilot starts in report-only
+mode; enforcement follows stable evidence and owner agreement. Operator/CRD checks and
+cross-component release conformance are follow-on work.
 
 ## End-to-End Flow
 
 <figure class="architecture-diagram">
   <img src="architecture-flow.svg" alt="The provider pull-request gate checks out the change, generates and validates a candidate contract, retrieves protected baselines, compares structure and behavior, and then passes compatible changes or fails breaking and integrity drift. Released versions then enter supported-matrix conformance." />
-  <figcaption>The central repository supplies tooling and orchestration; it does not copy the provider's canonical contract.</figcaption>
+  <figcaption>Target enforcement architecture. The API Contract testing infrastructure supplies shared checks and pointers; the first Model Catalog pilot starts in report-only mode, with release conformance as follow-on work.</figcaption>
 </figure>
 
 ### The six-step provider pull-request gate
@@ -62,7 +72,8 @@ owner of proving every provider API is safe.
 The Action publishes the exact candidate digest, baseline SHAs or digests, policy, modules,
 affected consumers, evidence, and remediation. In enforcement mode, the author must either make
 the change compatible or complete the separately reviewed intentional-change process before the
-gate can pass. Report-only mode is permitted only during onboarding.
+gate can pass. The pilot and onboarding use report-only mode; the closeout recommendation and
+provider/consumer agreement determine when enforcement starts.
 
 After merge, a trusted workflow publishes the accepted contract as a new immutable snapshot.
 Released component versions separately enter cross-component conformance against the supported
@@ -78,6 +89,8 @@ RHOAI matrix.
 | Changes runtime semantics not represented by the schema | Required provider behavior, upgrade, and consumer-profile checks provide the additional signal. Untested semantics remain an explicit coverage gap. |
 
 ## A Concrete Example: `opendatahub-operator`
+
+This is a follow-on illustration of the target model, not a deliverable of the first Catalog pilot.
 
 Think of the central repository as an inspection kit installed in each provider repository. The
 provider owns the building; Dashboard supplies a usage example; the Action inspects before merge.
@@ -139,10 +152,15 @@ examples below use its symptoms, detection layers, and confidence ratings.
 Repeated incidents strengthen the case for reusable provider checks: `RHOAIENG-66476` repeated the
 Model Registry finalizer pattern, `RHOAIENG-77786` repeated the TrustyAI requeue pattern, and
 `RHOAIENG-79331` repeated the Feast RBAC pattern. The Model Registry rows above concern
-`model-registry-operator`; the `model-registry` HTTP/OpenAPI pilot still needs a seeded removed-
-operation or removed-field replay before claiming equivalent evidence.
+`model-registry-operator`; the Model Catalog HTTP/OpenAPI pilot still needs a seeded removed-
+operation or removed-field replay before claiming equivalent evidence. Historical Registry
+incidents retain their original component attribution.
 
 ## V1 Scope
+
+This table describes the broader target scope. The first executable slice covers only the Model
+Catalog REST v1 API consumed by the Dashboard Model Catalog BFF. Operator/CRD and multi-component
+release checks are follow-on work; other interfaces require a separate scope decision.
 
 | Contract type | V1 covers | Typical evidence |
 |---|---|---|
@@ -174,7 +192,7 @@ forbidden, warning-only, or allowed with an approved migration plan.
 | Canonical OpenAPI, protobuf, or CRD source | Provider repository |
 | Provider implementation and behavior tests | Provider team |
 | Consumer expectations and consumer tests | Consumer repository, reviewed with provider |
-| Standards, descriptor schemas, policies, modules, and reporting | Working group through `api-contract-central` |
+| Shared compatibility policy, descriptor schemas, modules, catalog, and reporting | API Contract testing infrastructure through `api-contract-central`, governed by the working group |
 | Cross-component conformance profile | Joint provider/consumer DRI |
 | Supported release matrix | Productization representatives |
 | Dashboard end-to-end signal | Dashboard team |
@@ -288,30 +306,32 @@ them.
 
 ### Provider descriptor
 
-The component-owned descriptor points to local sources without copying them:
+The component-owned descriptor points to local sources without copying them. This is an
+illustrative service descriptor, not the Catalog pilot's confirmed paths, support level, or
+generator selection:
 
 ```yaml
 apiVersion: contracts.rhoai.io/v1alpha1
 kind: ContractSet
 metadata:
-  name: model-registry
+  name: example-service
 spec:
   supportLevel: stable
   candidate:
     generator:
       module: openapi.bundle
       version: 1.0.0
-      inputs: [api/openapi/model-registry.yaml]
-    declaredArtifact: api/openapi/model-registry.yaml
+      inputs: [api/openapi/src/service.yaml]
+    declaredArtifact: api/openapi/service.yaml
   baselines:
     rolling:
       strategy: target-branch-latest-accepted
     releases:
       strategy: all-supported
   contracts:
-    - id: model-registry-rest
+    - id: example-service-rest
       type: openapi
-      source: api/openapi/model-registry.yaml
+      source: api/openapi/src/service.yaml
       policy: stable-v1
       modules: [openapi.breaking-diff, openapi.policy]
 ```
@@ -350,14 +370,17 @@ Repositories needing custom job ordering can call
 rhoai-contract check --contract-set .rhoai/contracts.yaml --mode report
 ```
 
-The readable `v0` tag is suitable for the report-only pilot. Required workflows must pin the
+The readable `v0` tag illustrates report-only onboarding. The Catalog pilot uses a pinned OpenAPI
+check; the full reusable runner/workflow above is target tooling. Required workflows must pin the
 approved commit or signed image digest and receive explicit update pull requests.
 
 ## Pilot Cohort
 
-The pilot has three provider repositories plus Dashboard in the consumer role.
+The first pilot is the Model Catalog service consumed by Dashboard. The broader cohort includes
+`opendatahub-operator` and `workbenches-operator` as follow-on providers; their modules and profiles
+are not required in the first two-week slice.
 
-### `model-registry`: conventional service API
+### Model Catalog: first service API pilot
 
 - Generate or bundle the candidate OpenAPI artifact from the pull-request source on every run,
   then verify it against any committed generated artifact.
@@ -366,9 +389,13 @@ The pilot has three provider repositories plus Dashboard in the consumer role.
   authorization changes.
 - Run provider-native response conformance for the Dashboard-used subset.
 - Keep a Dashboard-owned profile of the operations and semantics its BFF/client consumes.
-- Prove the path by seeding one incompatible change to a consumed operation or response.
+- Cover model/version list and lookup, pagination, not-found, and authorization behavior as
+  described in the stakeholder brief; confirm their mapping to Catalog operations and fixtures.
+- Confirm the Catalog OpenAPI source/output paths, generation target, wire API version, and
+  supported-release revision before implementation; see the [pilot detail](../pilot/model-registry-dashboard.md).
+- Prove the path with additive, incompatible, and stale-generated-artifact changes in report mode.
 
-### `opendatahub-operator`: CRD and upgrade behavior
+### `opendatahub-operator`: follow-on CRD and upgrade behavior
 
 - Regenerate candidate CRDs from the pull-request Go types with the provider's pinned generation
   adapter and fail when they differ from committed CRD YAML.
@@ -379,7 +406,7 @@ The pilot has three provider repositories plus Dashboard in the consumer role.
 - Keep Dashboard expectations for the DSC/DSCI fields and conditions it reads.
 - Prove the path with a removed consumed field, tightened validation, or broken version conversion.
 
-### `workbenches-operator`: cross-repository Notebook integration
+### `workbenches-operator`: follow-on cross-repository Notebook integration
 
 - Regenerate the provider-owned Workbenches CRD and related candidate artifacts from pull-request
   source; fail generated/committed drift before compatibility analysis.
@@ -425,53 +452,55 @@ recorded.
 
 ## Proposed Two-Week Thin Slice
 
+**Proposed execution: October 5–16, 2026.** This slice implements only the Model Catalog–Dashboard
+boundary. The recommendation is proposed for October 16; pilot approval and dates remain pending.
+
 ### Week 1: Agree and scaffold
 
-- Approve charter, taxonomy, ownership, breaking-change definition, and the three boundaries.
-- Name one representative for each provider and agree support levels and baselines.
-- Scaffold the central repository, schemas, pointer catalog, module protocol, local runner, common
-  finding format, and report-only workflow.
-- Draft one provider descriptor and one Dashboard consumer profile per pilot.
+- Confirm execution responsibilities for Edson Tirelli / Model Catalog and Anthony Coughlin /
+  Dashboard, using the representatives named in the brief.
+- Confirm the Catalog source/output paths, generator, consumed wire API version, support level,
+  and protected branch and supported-release baselines with productization.
+- Integrate a pinned report-only OpenAPI check and register the provider contract pointer.
+- Add the Dashboard provider-facing Catalog consumer profile and bounded behavior checks.
 
 ### Week 2: Execute and decide
 
-- Implement one thin executable module/profile for each pilot boundary.
-- Open report-mode CI changes in all three provider repositories.
-- Run one positive and one seeded-negative scenario for each boundary.
-- Publish a scorecard, outstanding gaps, policy one-pager, and enforce/no-enforce recommendation.
-
-Dates for the first working-group session and final pilot recommendation must be agreed when the
-group accepts this proposal.
+- Run compatible, breaking, and stale-generated-artifact scenarios on the Catalog boundary.
+- Validate feedback on at least one real provider pull request.
+- Verify results are reproducible locally and arrive in under five minutes without a cluster.
+- Publish a scorecard, outstanding gaps, reusable onboarding template, and an
+  enforce/continue-reporting recommendation.
 
 ## Pilot Success Measures
 
-- All three providers have named owners, descriptors, consumer profiles, and CI integration.
-- Every pull request produces a normalized candidate from source and records its digest.
-- Generated candidates match declared committed artifacts, and results name every baseline SHA or
-  digest used.
-- All seeded incompatible changes and selected historical replays produce actionable diagnostics.
-- A seeded removal of an additively introduced post-release field is caught by the rolling accepted
-  snapshot.
-- No canonical provider specification is duplicated centrally.
-- Local and CI execution resolve the same baseline, policy, modules, and result.
-- Adding CI after a descriptor exists takes no more than 30 minutes.
-- No unexplained false positive remains at pilot close.
-- Enforcement starts only after report-mode stability and provider/consumer agreement.
-- Release results identify the exact supported component and dependency revisions.
+- Seeded incompatibilities and stale generated artifacts are detected with actionable feedback.
+- An additive change passes the checks.
+- Feedback arrives in under five minutes without a cluster.
+- Results are reproducible locally using the same protected baselines and policy as CI.
+- At least one real pull request runs without an unexplained false block.
+- Closeout provides a scorecard, reusable onboarding template, and an enforce/continue-reporting
+  recommendation. Enforcement follows stable report-mode evidence and owner agreement.
+
+Fresh generation, immutable baseline evidence, and the pointer-only catalog remain architecture
+requirements. Operator onboarding and exact-revision cross-component release evidence are
+follow-on goals, not first-pilot exit criteria.
 
 ## Initial Roles and Open Decisions
 
-| Role | Initial representative |
+| Role | Proposed representative / commitment |
 |---|---|
-| Working-group facilitator | Edson Tirelli |
-| Dashboard consumer representative | Anthony Coughlin |
-| Productization representatives | Rishab Prasad and Radim Kubis |
-| Provider representatives | One named maintainer from each pilot repository |
+| Facilitation | Edson Tirelli |
+| Consumer profile and tests | Anthony Coughlin / Dashboard |
+| Provider implementation and checks | Edson Tirelli / Model Catalog |
+| Supported-release baseline | Rishab Prasad / Radim Kubis; confirm provider revision |
 
-The group must confirm the final repository name, support-level definitions, baseline rules,
-exception review, first release matrix, meeting date, and recommendation date. All CRDs are a
-candidate low-friction expansion after the pilot. Model Catalog and MCP Catalog remain future
-cohort discussion; other non-pilot components are deferred.
+The first pilot still needs approval, confirmation of the Catalog contract details and
+supported-release revision, and acceptance of the proposed October 5–16 dates. Its provider and
+consumer representatives are already named in the stakeholder brief. The broader operating model
+still needs a final infrastructure repository name, support-level definitions, exception review,
+and a release matrix. Operator/CRD checks and cross-component release conformance are follow-on
+work; other interfaces require a separate scope decision.
 
 ## Guardrails
 
@@ -493,6 +522,9 @@ cohort discussion; other non-pilot components are deferred.
 
 ## Sources
 
+- [One-page stakeholder brief](../stakeholder-brief.md) — authoritative current scope,
+  representatives, proposed dates, and success criteria.
+- [Model Catalog–Dashboard pilot detail](../pilot/model-registry-dashboard.md)
 - Recent RHOAI API Contract Layer working-group notes supplied with this proposal.
 - [Dashboard Integration Gap Analysis](../research/dashboard-integration-gap-analysis.html)
 - [`kubeflow/notebooks` Swagger reference architecture](https://docs.google.com/presentation/d/1nKnsVGBL92mnXu8chWMxd9VLt1wgu7fRarrimVqMQbo/edit?slide=id.g379a97894cb_2_1095#slide=id.g379a97894cb_2_1095)

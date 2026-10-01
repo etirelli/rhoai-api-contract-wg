@@ -2,19 +2,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="pandoc 3.10" />
+  <meta name="generator" content="pandoc 3.7.0.2" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="RHOAI API Contract Working Group pilot architecture and delivery proposal" />
   <title>RHOAI API Contract Working Group</title>
   <style>
-
+code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: 1.5em;}
-div.column{flex: auto;}
-@media screen {
-div.columns{gap: min(4vw, 1.5em);}
-div.column{overflow-x: auto;}
-}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 
 ul.task-list[class]{list-style: none;}
@@ -293,8 +289,8 @@ a { color: inherit; text-decoration: none; }
   <a class="skip-link" href="#main-content">Skip to content</a>
   <header id="title-block-header">
     <h1 class="title">RHOAI API Contract Working Group</h1>
-    <p class="subtitle">Pilot architecture and delivery proposal for
-api-contract-central</p>
+    <p class="subtitle">Target architecture and Model Catalog–Dashboard
+pilot proposal</p>
   </header>
   <nav id="TOC" role="doc-toc" aria-label="Table of contents">
     <ul>
@@ -328,10 +324,24 @@ api-contract-central</p>
     </ul>
   </nav>
   <main id="main-content">
-    <p><strong>Status:</strong> Working-group proposal<br />
-    <strong>Working repository name:</strong>
-    <code>api-contract-central</code><br />
-    <strong>Updated:</strong> 2026-09-28</p>
+    <ul>
+    <li><strong>Status:</strong> Target architecture proposal; Model
+    Catalog pilot awaiting approval</li>
+    <li><strong>Working repository name:</strong>
+    <code>api-contract-central</code></li>
+    <li><strong>Updated:</strong> 2026-10-01</li>
+    </ul>
+    <blockquote>
+    <p><strong>Source of truth:</strong> The <a href="../../stakeholder-brief.md">one-page stakeholder brief</a>
+    defines current scope, representatives, proposed dates, and success
+    criteria. This proposal elaborates the operating model; the first
+    slice is Model Catalog–Dashboard, proposed for October 5–16,
+    2026.</p>
+    </blockquote>
+    <blockquote>
+    <p><strong>Pilot detail:</strong> <a href="../../pilot/model-registry-dashboard.md">Model
+    Catalog–Dashboard API Contract Pilot</a></p>
+    </blockquote>
     <blockquote>
     <p><strong>Charter:</strong> Help RHOAI component teams own
     compatibility guarantees for the APIs they expose, and detect
@@ -347,8 +357,9 @@ api-contract-central</p>
     tests in its own repository.</li>
     <li>Dashboard and other consumers record the specific behavior they
     depend on in their repositories.</li>
-    <li>The central repository records where those artifacts live and
-    supplies common checks.</li>
+    <li>The API Contract testing infrastructure records where those
+    artifacts live and supplies shared compatibility policy and common
+    checks through the proposed central repository.</li>
     <li>A small GitHub Action runs those checks in the component&#39;s pull
     request.</li>
     <li>If a change is compatible, the pull request proceeds.</li>
@@ -360,13 +371,18 @@ api-contract-central</p>
     when one repository cannot prove the full behavior alone.</li>
     </ul>
     <p>The important boundary is ownership: the component team owns the
-    promise its API makes. The working group owns the shared rules and
-    tooling. Dashboard is a named consumer, not the default owner of
-    proving every provider API is safe.</p>
+    promise its API makes. The working group governs shared rules and
+    adoption; the API Contract testing infrastructure supplies the
+    policy, tooling, and pointer catalog. Dashboard is a named consumer,
+    not the default owner of proving every provider API is safe.</p>
+    <p>The flow below describes the target enforcement model. The first
+    pilot starts in report-only mode; enforcement follows stable
+    evidence and owner agreement. Operator/CRD checks and
+    cross-component release conformance are follow-on work.</p>
     <h2 id="end-to-end-flow">End-to-End Flow</h2>
     <figure class="architecture-diagram">
-      <img role="img" aria-label="The provider pull-request gate checks out the change, generates and validates a candidate contract, retrieves protected baselines, compares structure and behavior, and then passes compatible changes or fails breaking and integrity drift. Released versions then enter supported-matrix conformance." src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDkzMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9ImRpYWdyYW0tdGl0bGUgZGlhZ3JhbS1kZXNjcmlwdGlvbiI+CiAgPHRpdGxlIGlkPSJkaWFncmFtLXRpdGxlIj5TaXgtc3RlcCBSSE9BSSBBUEkgY29udHJhY3QgcHVsbC1yZXF1ZXN0IGdhdGUgYW5kIHJlbGVhc2UgZmxvdzwvdGl0bGU+CiAgPGRlc2MgaWQ9ImRpYWdyYW0tZGVzY3JpcHRpb24iPlRoZSBnYXRlIGNoZWNrcyBvdXQgdGhlIHByb3NwZWN0aXZlIG1lcmdlLCBnZW5lcmF0ZXMgYW5kIHZhbGlkYXRlcyBhIGNhbmRpZGF0ZSBjb250cmFjdCwgcmV0cmlldmVzIHByb3RlY3RlZCBiYXNlbGluZXMsIGNvbXBhcmVzIHN0cnVjdHVyZSBhbmQgYmVoYXZpb3IsIHBhc3NlcyBjb21wYXRpYmxlIGNoYW5nZXMsIGFuZCBmYWlscyBicmVha2luZyBvciBpbnRlZ3JpdHkgZHJpZnQuIFJlbGVhc2VkIHZlcnNpb25zIHRoZW4gcnVuIHRocm91Z2ggc3VwcG9ydGVkLW1hdHJpeCBjb25mb3JtYW5jZS48L2Rlc2M+CiAgPGRlZnM+CiAgICA8bWFya2VyIGlkPSJhcnJvdyIgdmlld0JveD0iMCAwIDEwIDEwIiByZWZYPSI4IiByZWZZPSI1IiBtYXJrZXJXaWR0aD0iOCIgbWFya2VySGVpZ2h0PSI4IiBvcmllbnQ9ImF1dG8tc3RhcnQtcmV2ZXJzZSI+CiAgICAgIDxwYXRoIGQ9Ik0gMCAwIEwgMTAgNSBMIDAgMTAgeiIgY2xhc3M9ImFycm93LWhlYWQiIC8+CiAgICA8L21hcmtlcj4KICAgIDxzdHlsZT4KICAgICAgLmNhbnZhcyB7IGZpbGw6ICNmN2Y5ZmI7IHN0cm9rZTogI2M4ZDFkYzsgc3Ryb2tlLXdpZHRoOiAyOyB9CiAgICAgIC5ib3ggeyBmaWxsOiAjZmZmZmZmOyBzdHJva2U6ICM2NTc3ODk7IHN0cm9rZS13aWR0aDogMjsgfQogICAgICAuY2VudHJhbCB7IGZpbGw6ICNlN2YyZmY7IHN0cm9rZTogIzAwNjZjYzsgfQogICAgICAuYWN0aW9uIHsgZmlsbDogI2U3ZjJmZjsgc3Ryb2tlOiAjMDA2NmNjOyBzdHJva2Utd2lkdGg6IDM7IH0KICAgICAgLmNoZWNrcyB7IGZpbGw6ICNmZmZmZmY7IHN0cm9rZTogIzAwNjZjYzsgc3Ryb2tlLXdpZHRoOiAzOyB9CiAgICAgIC5wYXNzIHsgZmlsbDogI2VhZjdlYzsgc3Ryb2tlOiAjMmY3ZDMyOyB9CiAgICAgIC5yZXZpZXcgeyBmaWxsOiAjZmZmNGRjOyBzdHJva2U6ICM5YjY1MDA7IH0KICAgICAgLmZhaWwgeyBmaWxsOiAjZmRlY2VjOyBzdHJva2U6ICNiNDIzMTg7IH0KICAgICAgLnJlbGVhc2UgeyBmaWxsOiAjZjFlZWZjOyBzdHJva2U6ICM2NzUwYTQ7IH0KICAgICAgLmxpbmUgeyBmaWxsOiBub25lOyBzdHJva2U6ICM0ZjYzNzU7IHN0cm9rZS13aWR0aDogMzsgbWFya2VyLWVuZDogdXJsKCNhcnJvdyk7IH0KICAgICAgLmFycm93LWhlYWQgeyBmaWxsOiAjNGY2Mzc1OyB9CiAgICAgIC50aXRsZSB7IGZpbGw6ICMxNzIxMmI7IGZvbnQ6IDcwMCAyOHB4IEludGVyLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIHNhbnMtc2VyaWY7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0KICAgICAgLnNlY3Rpb24geyBmaWxsOiAjNDM1NDY2OyBmb250OiA3MDAgMTZweCBJbnRlciwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBzYW5zLXNlcmlmOyBsZXR0ZXItc3BhY2luZzogMXB4OyB0ZXh0LXRyYW5zZm9ybTogdXBwZXJjYXNlOyB9CiAgICAgIC5oZWFkaW5nIHsgZmlsbDogIzE3MjEyYjsgZm9udDogNzAwIDE5cHggSW50ZXIsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgc2Fucy1zZXJpZjsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQogICAgICAuYm9keSB7IGZpbGw6ICMzMzQ0NTU7IGZvbnQ6IDE0cHggSW50ZXIsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgc2Fucy1zZXJpZjsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQogICAgICAuc21hbGwgeyBmaWxsOiAjNTI2NTc5OyBmb250OiAxM3B4IEludGVyLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIHNhbnMtc2VyaWY7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0KICAgICAgQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgICAgIC5jYW52YXMgeyBmaWxsOiAjMTExODIwOyBzdHJva2U6ICMzYzRiNWE7IH0KICAgICAgICAuYm94LCAuY2hlY2tzIHsgZmlsbDogIzE4MjIyZDsgc3Ryb2tlOiAjNzE4NTlhOyB9CiAgICAgICAgLmNlbnRyYWwsIC5hY3Rpb24geyBmaWxsOiAjMTQyYzQzOyBzdHJva2U6ICM3MmI3ZmY7IH0KICAgICAgICAucGFzcyB7IGZpbGw6ICMxNzMzMWY7IHN0cm9rZTogIzc3Yzk4NzsgfQogICAgICAgIC5yZXZpZXcgeyBmaWxsOiAjM2EyYjEzOyBzdHJva2U6ICNlNmI4NWM7IH0KICAgICAgICAuZmFpbCB7IGZpbGw6ICMzZDFlMjA7IHN0cm9rZTogI2VmOGQ4ZDsgfQogICAgICAgIC5yZWxlYXNlIHsgZmlsbDogIzI5MjMzZDsgc3Ryb2tlOiAjYjlhN2VjOyB9CiAgICAgICAgLmxpbmUgeyBzdHJva2U6ICNhNWI3Yzg7IH0KICAgICAgICAuYXJyb3ctaGVhZCB7IGZpbGw6ICNhNWI3Yzg7IH0KICAgICAgICAudGl0bGUsIC5oZWFkaW5nIHsgZmlsbDogI2VkZjNmODsgfQogICAgICAgIC5zZWN0aW9uLCAuYm9keSwgLnNtYWxsIHsgZmlsbDogI2JmY2NkODsgfQogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KCiAgPHJlY3QgY2xhc3M9ImNhbnZhcyIgeD0iMSIgeT0iMSIgd2lkdGg9IjExOTgiIGhlaWdodD0iOTI4IiByeD0iMTIiIC8+CiAgPHRleHQgY2xhc3M9InRpdGxlIiB4PSI2MDAiIHk9IjQ2Ij5Ib3cgYSBjaGFuZ2UgbW92ZXMgdGhyb3VnaCB0aGUgY29udHJhY3QgbGF5ZXI8L3RleHQ+CiAgPHRleHQgY2xhc3M9InNlY3Rpb24iIHg9IjMyIiB5PSI3OCI+SW5wdXRzPC90ZXh0PgoKICA8cmVjdCBjbGFzcz0iYm94IiB4PSIzMiIgeT0iOTIiIHdpZHRoPSIzMjAiIGhlaWdodD0iMTQyIiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iMTkyIiB5PSIxMjUiPlByb3ZpZGVyIHJlcG9zaXRvcnk8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjE5MiIgeT0iMTU0Ij4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIwIj5DYW5vbmljYWwgQVBJLCBwcm90b2J1Ziwgb3IgQ1JEPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIyMyI+UHJvdmlkZXItbmF0aXZlIHRlc3RzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIyMyI+LnJob2FpL2NvbnRyYWN0cy55YW1sPC90c3Bhbj4KICA8L3RleHQ+CgogIDxyZWN0IGNsYXNzPSJjZW50cmFsIiB4PSI0NDAiIHk9IjkyIiB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE0MiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iMTI1Ij5hcGktY29udHJhY3QtY2VudHJhbDwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iNjAwIiB5PSIxNTQiPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjAiPkNhdGFsb2cgcG9pbnRlcnMsIHBvbGljaWVzLCBhbmQgYmFzZWxpbmUgcmVzb2x2ZXI8L3RzcGFuPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjIzIj5BcHByb3ZlZCBjb21wYXRpYmlsaXR5IG1vZHVsZXM8L3RzcGFuPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjIzIj5SdW5uZXIsIEFjdGlvbiwgYW5kIHJlcG9ydGluZzwvdHNwYW4+CiAgPC90ZXh0PgoKICA8cmVjdCBjbGFzcz0iYm94IiB4PSI4NDgiIHk9IjkyIiB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE0MiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjEwMDgiIHk9IjEyNSI+Q29uc3VtZXIgcmVwb3NpdG9yeTwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iMTAwOCIgeT0iMTU0Ij4KICAgIDx0c3BhbiB4PSIxMDA4IiBkeT0iMCI+RGFzaGJvYXJkIGV4cGVjdGF0aW9ucyBhbmQgU0hBIHBpbnM8L3RzcGFuPgogICAgPHRzcGFuIHg9IjEwMDgiIGR5PSIyMyI+Q29uc3VtZWQgYmVoYXZpb3IgYW5kIGZpeHR1cmVzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxMDA4IiBkeT0iMjMiPkNvbnN1bWVyLW93bmVkIHRlc3RzPC90c3Bhbj4KICA8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDE5MiAyMzQgQyAxOTIgMjc1LCA0MDAgMjYwLCA0NTAgMzAyIiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDYwMCAyMzQgTCA2MDAgMzAyIiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDEwMDggMjM0IEMgMTAwOCAyNzUsIDgwMCAyNjAsIDc1MCAzMDIiIC8+CgogIDx0ZXh0IGNsYXNzPSJzZWN0aW9uIiB4PSIzMiIgeT0iMjg2Ij5Qcm92aWRlciBwdWxsIHJlcXVlc3Q8L3RleHQ+CiAgPHJlY3QgY2xhc3M9ImFjdGlvbiIgeD0iMzMwIiB5PSIzMDQiIHdpZHRoPSI1NDAiIGhlaWdodD0iMTA2IiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iNjAwIiB5PSIzMzQiPlN0ZXBzIDHigJMzOiBNYXRlcmlhbGl6ZSB0cnVzdGVkIGlucHV0czwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iNjAwIiB5PSIzNjAiPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjAiPjEgQ2hlY2sgb3V0IHRoZSBwcm9zcGVjdGl2ZSBtZXJnZSBhbmQgZ2VuZXJhdGUgdGhlIGNhbmRpZGF0ZTwvdHNwYW4+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMjAiPjIgVmVyaWZ5IGl0IGFnYWluc3QgdGhlIHByb3ZpZGVyJ3MgZGVjbGFyZWQgZ2VuZXJhdGVkIGFydGlmYWN0PC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIyMCI+MyBSZXNvbHZlIHByb3RlY3RlZCBiYXNlbGluZXMgYnkgZnVsbCBTSEEgb3IgZGlnZXN0PC90c3Bhbj4KICA8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDYwMCA0MTAgTCA2MDAgNDU0IiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDg3MCAzODAgQyAxMDgwIDM5MCwgMTE0MCA1MzAsIDEwMDAgNjM4IiAvPgogIDxyZWN0IGNsYXNzPSJjaGVja3MiIHg9IjMzMCIgeT0iNDU2IiB3aWR0aD0iNTQwIiBoZWlnaHQ9IjExMiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iNDkyIj5TdGVwIDQ6IFByb3ZlIGNvbXBhdGliaWxpdHk8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjYwMCIgeT0iNTIxIj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIwIj5Db21wYXJlIHdpdGggbGF0ZXN0IGFjY2VwdGVkIGFuZCBhbGwgc3VwcG9ydGVkIHJlbGVhc2Ugc25hcHNob3RzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIyMiI+UmVxdWlyZSBzdHJ1Y3R1cmFsLCBiZWhhdmlvciwgdXBncmFkZSwgYW5kIGNvbnN1bWVyLXByb2ZpbGUgcmVzdWx0czwvdHNwYW4+CiAgPC90ZXh0PgoKICA8dGV4dCBjbGFzcz0ic2VjdGlvbiIgeD0iMzIiIHk9IjYxNCI+U3RlcHMgNeKAkzY6IEVuZm9yY2Ugb3V0Y29tZTwvdGV4dD4KICA8cGF0aCBjbGFzcz0ibGluZSIgZD0iTSA2MDAgNTY4IEMgNjAwIDYwMCwgMjAwIDU5MCwgMjAwIDYzOCIgLz4KICA8cGF0aCBjbGFzcz0ibGluZSIgZD0iTSA2MDAgNTY4IEwgNjAwIDYzOCIgLz4KCiAgPHJlY3QgY2xhc3M9InBhc3MiIHg9IjMyIiB5PSI2NDAiIHdpZHRoPSIzMzYiIGhlaWdodD0iMTA0IiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iMjAwIiB5PSI2NzQiPlN0ZXAgNTogQ29tcGF0aWJsZTwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iMjAwIiB5PSI3MDAiPgogICAgPHRzcGFuIHg9IjIwMCIgZHk9IjAiPkFkZGl0aXZlIG9yIGNvbXBhdGlibGUgY2hhbmdlIHBhc3NlczwvdHNwYW4+CiAgICA8dHNwYW4geD0iMjAwIiBkeT0iMjAiPlB1Ymxpc2ggZXhhY3QgZXZpZGVuY2U8L3RzcGFuPgogIDwvdGV4dD4KCiAgPHJlY3QgY2xhc3M9ImZhaWwiIHg9IjQzMiIgeT0iNjQwIiB3aWR0aD0iMzM2IiBoZWlnaHQ9IjEwNCIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iNjc0Ij5TdGVwIDU6IEJyZWFraW5nPC90ZXh0PgogIDx0ZXh0IGNsYXNzPSJib2R5IiB4PSI2MDAiIHk9IjY5NiI+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMCI+QnJlYWtpbmcgY2hhbmdlIGZhaWxzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIxOSI+Rml4IGl0IG9yIGVudGVyIHRoZSByZXZpZXdlZDwvdHNwYW4+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMTkiPmludGVudGlvbmFsLWNoYW5nZSBwcm9jZXNzPC90c3Bhbj4KICA8L3RleHQ+CgogIDxyZWN0IGNsYXNzPSJmYWlsIiB4PSI4MzIiIHk9IjY0MCIgd2lkdGg9IjMzNiIgaGVpZ2h0PSIxMDQiIHJ4PSI4IiAvPgogIDx0ZXh0IGNsYXNzPSJoZWFkaW5nIiB4PSIxMDAwIiB5PSI2NzQiPlN0ZXAgNjogRmFpbCBjbG9zZWQ8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjEwMDAiIHk9IjY5NiI+CiAgICA8dHNwYW4geD0iMTAwMCIgZHk9IjAiPkdlbmVyYXRpb24sIGFydGlmYWN0LCBiYXNlbGluZSw8L3RzcGFuPgogICAgPHRzcGFuIHg9IjEwMDAiIGR5PSIxOSI+ZGlnZXN0LCBvciByZXF1aXJlZC1yZXN1bHQgZXJyb3I8L3RzcGFuPgogIDwvdGV4dD4KCiAgPHRleHQgY2xhc3M9InNlY3Rpb24iIHg9IjMyIiB5PSI3OTQiPkFmdGVyIG1lcmdlOiByZWxlYXNlIGZsb3c8L3RleHQ+CiAgPHJlY3QgY2xhc3M9InJlbGVhc2UiIHg9IjgwIiB5PSI4MTIiIHdpZHRoPSIyODAiIGhlaWdodD0iNzgiIHJ4PSI4IiAvPgogIDx0ZXh0IGNsYXNzPSJoZWFkaW5nIiB4PSIyMjAiIHk9Ijg0MyI+UGlubmVkIHJlbGVhc2UgbWF0cml4PC90ZXh0PgogIDx0ZXh0IGNsYXNzPSJzbWFsbCIgeD0iMjIwIiB5PSI4NzAiPlByb3ZpZGVyICsgY29uc3VtZXIgKyBkZXBlbmRlbmNpZXM8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDM2MCA4NTEgTCA0NTggODUxIiAvPgogIDxyZWN0IGNsYXNzPSJyZWxlYXNlIiB4PSI0NjAiIHk9IjgxMiIgd2lkdGg9IjI4MCIgaGVpZ2h0PSI3OCIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iODQzIj5Dcm9zcy1jb21wb25lbnQgY29uZm9ybWFuY2U8L3RleHQ+CiAgPHRleHQgY2xhc3M9InNtYWxsIiB4PSI2MDAiIHk9Ijg3MCI+UnVuIHdvcmtmbG93cyBubyBzaW5nbGUgcmVwbyBjYW4gcHJvdmU8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDc0MCA4NTEgTCA4MzggODUxIiAvPgogIDxyZWN0IGNsYXNzPSJyZWxlYXNlIiB4PSI4NDAiIHk9IjgxMiIgd2lkdGg9IjI4MCIgaGVpZ2h0PSI3OCIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9Ijk4MCIgeT0iODQzIj5Qcm9kdWN0IHJlbGVhc2UgZXZpZGVuY2U8L3RleHQ+CiAgPHRleHQgY2xhc3M9InNtYWxsIiB4PSI5ODAiIHk9Ijg3MCI+RXhhY3Qgc3VwcG9ydGVkIHZlcnNpb25zIGFuZCByZXN1bHRzPC90ZXh0Pgo8L3N2Zz4K" alt="The provider pull-request gate checks out the change, generates and validates a candidate contract, retrieves protected baselines, compares structure and behavior, and then passes compatible changes or fails breaking and integrity drift. Released versions then enter supported-matrix conformance." />
-      <figcaption>The central repository supplies tooling and orchestration; it does not copy the provider&#39;s canonical contract.</figcaption>
+      <img role="img" aria-label="The provider pull-request gate checks out the change, generates and validates a candidate contract, retrieves protected baselines, compares structure and behavior, and then passes compatible changes or fails breaking and integrity drift. Released versions then enter supported-matrix conformance." src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDkzMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9ImRpYWdyYW0tdGl0bGUgZGlhZ3JhbS1kZXNjcmlwdGlvbiI+CiAgPHRpdGxlIGlkPSJkaWFncmFtLXRpdGxlIj5UYXJnZXQgUkhPQUkgQVBJIGNvbnRyYWN0IGVuZm9yY2VtZW50IGFuZCBmb2xsb3ctb24gcmVsZWFzZSBmbG93PC90aXRsZT4KICA8ZGVzYyBpZD0iZGlhZ3JhbS1kZXNjcmlwdGlvbiI+VGhpcyBpcyB0aGUgdGFyZ2V0IGVuZm9yY2VtZW50IG1vZGVsOyB0aGUgZmlyc3QgTW9kZWwgQ2F0YWxvZ+KAk0Rhc2hib2FyZCBwaWxvdCBzdGFydHMgaW4gcmVwb3J0LW9ubHkgbW9kZS4gVGhlIGdhdGUgY2hlY2tzIG91dCB0aGUgcHJvc3BlY3RpdmUgbWVyZ2UsIGdlbmVyYXRlcyBhbmQgdmFsaWRhdGVzIGEgY2FuZGlkYXRlIGNvbnRyYWN0LCByZXRyaWV2ZXMgcHJvdGVjdGVkIGJhc2VsaW5lcywgY29tcGFyZXMgc3RydWN0dXJlIGFuZCBiZWhhdmlvciwgcGFzc2VzIGNvbXBhdGlibGUgY2hhbmdlcywgYW5kIGZhaWxzIGJyZWFraW5nIG9yIGludGVncml0eSBkcmlmdC4gU3VwcG9ydGVkLW1hdHJpeCByZWxlYXNlIGNvbmZvcm1hbmNlIGlzIGZvbGxvdy1vbiB3b3JrLjwvZGVzYz4KICA8ZGVmcz4KICAgIDxtYXJrZXIgaWQ9ImFycm93IiB2aWV3Qm94PSIwIDAgMTAgMTAiIHJlZlg9IjgiIHJlZlk9IjUiIG1hcmtlcldpZHRoPSI4IiBtYXJrZXJIZWlnaHQ9IjgiIG9yaWVudD0iYXV0by1zdGFydC1yZXZlcnNlIj4KICAgICAgPHBhdGggZD0iTSAwIDAgTCAxMCA1IEwgMCAxMCB6IiBjbGFzcz0iYXJyb3ctaGVhZCIgLz4KICAgIDwvbWFya2VyPgogICAgPHN0eWxlPgogICAgICAuY2FudmFzIHsgZmlsbDogI2Y3ZjlmYjsgc3Ryb2tlOiAjYzhkMWRjOyBzdHJva2Utd2lkdGg6IDI7IH0KICAgICAgLmJveCB7IGZpbGw6ICNmZmZmZmY7IHN0cm9rZTogIzY1Nzc4OTsgc3Ryb2tlLXdpZHRoOiAyOyB9CiAgICAgIC5jZW50cmFsIHsgZmlsbDogI2U3ZjJmZjsgc3Ryb2tlOiAjMDA2NmNjOyB9CiAgICAgIC5hY3Rpb24geyBmaWxsOiAjZTdmMmZmOyBzdHJva2U6ICMwMDY2Y2M7IHN0cm9rZS13aWR0aDogMzsgfQogICAgICAuY2hlY2tzIHsgZmlsbDogI2ZmZmZmZjsgc3Ryb2tlOiAjMDA2NmNjOyBzdHJva2Utd2lkdGg6IDM7IH0KICAgICAgLnBhc3MgeyBmaWxsOiAjZWFmN2VjOyBzdHJva2U6ICMyZjdkMzI7IH0KICAgICAgLnJldmlldyB7IGZpbGw6ICNmZmY0ZGM7IHN0cm9rZTogIzliNjUwMDsgfQogICAgICAuZmFpbCB7IGZpbGw6ICNmZGVjZWM7IHN0cm9rZTogI2I0MjMxODsgfQogICAgICAucmVsZWFzZSB7IGZpbGw6ICNmMWVlZmM7IHN0cm9rZTogIzY3NTBhNDsgfQogICAgICAubGluZSB7IGZpbGw6IG5vbmU7IHN0cm9rZTogIzRmNjM3NTsgc3Ryb2tlLXdpZHRoOiAzOyBtYXJrZXItZW5kOiB1cmwoI2Fycm93KTsgfQogICAgICAuYXJyb3ctaGVhZCB7IGZpbGw6ICM0ZjYzNzU7IH0KICAgICAgLnRpdGxlIHsgZmlsbDogIzE3MjEyYjsgZm9udDogNzAwIDI4cHggSW50ZXIsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgc2Fucy1zZXJpZjsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQogICAgICAuc2VjdGlvbiB7IGZpbGw6ICM0MzU0NjY7IGZvbnQ6IDcwMCAxNnB4IEludGVyLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIHNhbnMtc2VyaWY7IGxldHRlci1zcGFjaW5nOiAxcHg7IHRleHQtdHJhbnNmb3JtOiB1cHBlcmNhc2U7IH0KICAgICAgLmhlYWRpbmcgeyBmaWxsOiAjMTcyMTJiOyBmb250OiA3MDAgMTlweCBJbnRlciwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBzYW5zLXNlcmlmOyB0ZXh0LWFuY2hvcjogbWlkZGxlOyB9CiAgICAgIC5ib2R5IHsgZmlsbDogIzMzNDQ1NTsgZm9udDogMTRweCBJbnRlciwgLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBzYW5zLXNlcmlmOyB0ZXh0LWFuY2hvcjogbWlkZGxlOyB9CiAgICAgIC5zbWFsbCB7IGZpbGw6ICM1MjY1Nzk7IGZvbnQ6IDEzcHggSW50ZXIsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgc2Fucy1zZXJpZjsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQogICAgICBAbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOiBkYXJrKSB7CiAgICAgICAgLmNhbnZhcyB7IGZpbGw6ICMxMTE4MjA7IHN0cm9rZTogIzNjNGI1YTsgfQogICAgICAgIC5ib3gsIC5jaGVja3MgeyBmaWxsOiAjMTgyMjJkOyBzdHJva2U6ICM3MTg1OWE7IH0KICAgICAgICAuY2VudHJhbCwgLmFjdGlvbiB7IGZpbGw6ICMxNDJjNDM7IHN0cm9rZTogIzcyYjdmZjsgfQogICAgICAgIC5wYXNzIHsgZmlsbDogIzE3MzMxZjsgc3Ryb2tlOiAjNzdjOTg3OyB9CiAgICAgICAgLnJldmlldyB7IGZpbGw6ICMzYTJiMTM7IHN0cm9rZTogI2U2Yjg1YzsgfQogICAgICAgIC5mYWlsIHsgZmlsbDogIzNkMWUyMDsgc3Ryb2tlOiAjZWY4ZDhkOyB9CiAgICAgICAgLnJlbGVhc2UgeyBmaWxsOiAjMjkyMzNkOyBzdHJva2U6ICNiOWE3ZWM7IH0KICAgICAgICAubGluZSB7IHN0cm9rZTogI2E1YjdjODsgfQogICAgICAgIC5hcnJvdy1oZWFkIHsgZmlsbDogI2E1YjdjODsgfQogICAgICAgIC50aXRsZSwgLmhlYWRpbmcgeyBmaWxsOiAjZWRmM2Y4OyB9CiAgICAgICAgLnNlY3Rpb24sIC5ib2R5LCAuc21hbGwgeyBmaWxsOiAjYmZjY2Q4OyB9CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgoKICA8cmVjdCBjbGFzcz0iY2FudmFzIiB4PSIxIiB5PSIxIiB3aWR0aD0iMTE5OCIgaGVpZ2h0PSI5MjgiIHJ4PSIxMiIgLz4KICA8dGV4dCBjbGFzcz0idGl0bGUiIHg9IjYwMCIgeT0iNDYiPlRhcmdldCBjb250cmFjdCBmbG93IOKAlCBwaWxvdCBzdGFydHMgcmVwb3J0LW9ubHk8L3RleHQ+CiAgPHRleHQgY2xhc3M9InNlY3Rpb24iIHg9IjMyIiB5PSI3OCI+SW5wdXRzPC90ZXh0PgoKICA8cmVjdCBjbGFzcz0iYm94IiB4PSIzMiIgeT0iOTIiIHdpZHRoPSIzMjAiIGhlaWdodD0iMTQyIiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iMTkyIiB5PSIxMjUiPlByb3ZpZGVyIHJlcG9zaXRvcnk8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjE5MiIgeT0iMTU0Ij4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIwIj5DYW5vbmljYWwgQVBJLCBwcm90b2J1Ziwgb3IgQ1JEPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIyMyI+UHJvdmlkZXItbmF0aXZlIHRlc3RzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxOTIiIGR5PSIyMyI+LnJob2FpL2NvbnRyYWN0cy55YW1sPC90c3Bhbj4KICA8L3RleHQ+CgogIDxyZWN0IGNsYXNzPSJjZW50cmFsIiB4PSI0NDAiIHk9IjkyIiB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE0MiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iMTI1Ij5hcGktY29udHJhY3QtY2VudHJhbDwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iNjAwIiB5PSIxNTQiPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjAiPkNhdGFsb2cgcG9pbnRlcnMsIHBvbGljaWVzLCBhbmQgYmFzZWxpbmUgcmVzb2x2ZXI8L3RzcGFuPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjIzIj5BcHByb3ZlZCBjb21wYXRpYmlsaXR5IG1vZHVsZXM8L3RzcGFuPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjIzIj5SdW5uZXIsIEFjdGlvbiwgYW5kIHJlcG9ydGluZzwvdHNwYW4+CiAgPC90ZXh0PgoKICA8cmVjdCBjbGFzcz0iYm94IiB4PSI4NDgiIHk9IjkyIiB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE0MiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjEwMDgiIHk9IjEyNSI+Q29uc3VtZXIgcmVwb3NpdG9yeTwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iMTAwOCIgeT0iMTU0Ij4KICAgIDx0c3BhbiB4PSIxMDA4IiBkeT0iMCI+RGFzaGJvYXJkIGV4cGVjdGF0aW9ucyBhbmQgU0hBIHBpbnM8L3RzcGFuPgogICAgPHRzcGFuIHg9IjEwMDgiIGR5PSIyMyI+Q29uc3VtZWQgYmVoYXZpb3IgYW5kIGZpeHR1cmVzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSIxMDA4IiBkeT0iMjMiPkNvbnN1bWVyLW93bmVkIHRlc3RzPC90c3Bhbj4KICA8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDE5MiAyMzQgQyAxOTIgMjc1LCA0MDAgMjYwLCA0NTAgMzAyIiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDYwMCAyMzQgTCA2MDAgMzAyIiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDEwMDggMjM0IEMgMTAwOCAyNzUsIDgwMCAyNjAsIDc1MCAzMDIiIC8+CgogIDx0ZXh0IGNsYXNzPSJzZWN0aW9uIiB4PSIzMiIgeT0iMjg2Ij5Qcm92aWRlciBwdWxsIHJlcXVlc3Q8L3RleHQ+CiAgPHJlY3QgY2xhc3M9ImFjdGlvbiIgeD0iMzMwIiB5PSIzMDQiIHdpZHRoPSI1NDAiIGhlaWdodD0iMTA2IiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iNjAwIiB5PSIzMzQiPlN0ZXBzIDHigJMzOiBNYXRlcmlhbGl6ZSB0cnVzdGVkIGlucHV0czwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iNjAwIiB5PSIzNjAiPgogICAgPHRzcGFuIHg9IjYwMCIgZHk9IjAiPjEgQ2hlY2sgb3V0IHRoZSBwcm9zcGVjdGl2ZSBtZXJnZSBhbmQgZ2VuZXJhdGUgdGhlIGNhbmRpZGF0ZTwvdHNwYW4+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMjAiPjIgVmVyaWZ5IGl0IGFnYWluc3QgdGhlIHByb3ZpZGVyJ3MgZGVjbGFyZWQgZ2VuZXJhdGVkIGFydGlmYWN0PC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIyMCI+MyBSZXNvbHZlIHByb3RlY3RlZCBiYXNlbGluZXMgYnkgZnVsbCBTSEEgb3IgZGlnZXN0PC90c3Bhbj4KICA8L3RleHQ+CgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDYwMCA0MTAgTCA2MDAgNDU0IiAvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNIDg3MCAzODAgQyAxMDgwIDM5MCwgMTE0MCA1MzAsIDEwMDAgNjM4IiAvPgogIDxyZWN0IGNsYXNzPSJjaGVja3MiIHg9IjMzMCIgeT0iNDU2IiB3aWR0aD0iNTQwIiBoZWlnaHQ9IjExMiIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iNDkyIj5TdGVwIDQ6IFByb3ZlIGNvbXBhdGliaWxpdHk8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjYwMCIgeT0iNTIxIj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIwIj5Db21wYXJlIHdpdGggbGF0ZXN0IGFjY2VwdGVkIGFuZCBhbGwgc3VwcG9ydGVkIHJlbGVhc2Ugc25hcHNob3RzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIyMiI+UmVxdWlyZSBzdHJ1Y3R1cmFsLCBiZWhhdmlvciwgdXBncmFkZSwgYW5kIGNvbnN1bWVyLXByb2ZpbGUgcmVzdWx0czwvdHNwYW4+CiAgPC90ZXh0PgoKICA8dGV4dCBjbGFzcz0ic2VjdGlvbiIgeD0iMzIiIHk9IjYxNCI+U3RlcHMgNeKAkzY6IEVuZm9yY2Ugb3V0Y29tZTwvdGV4dD4KICA8cGF0aCBjbGFzcz0ibGluZSIgZD0iTSA2MDAgNTY4IEMgNjAwIDYwMCwgMjAwIDU5MCwgMjAwIDYzOCIgLz4KICA8cGF0aCBjbGFzcz0ibGluZSIgZD0iTSA2MDAgNTY4IEwgNjAwIDYzOCIgLz4KCiAgPHJlY3QgY2xhc3M9InBhc3MiIHg9IjMyIiB5PSI2NDAiIHdpZHRoPSIzMzYiIGhlaWdodD0iMTA0IiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iMjAwIiB5PSI2NzQiPlN0ZXAgNTogQ29tcGF0aWJsZTwvdGV4dD4KICA8dGV4dCBjbGFzcz0iYm9keSIgeD0iMjAwIiB5PSI3MDAiPgogICAgPHRzcGFuIHg9IjIwMCIgZHk9IjAiPkFkZGl0aXZlIG9yIGNvbXBhdGlibGUgY2hhbmdlIHBhc3NlczwvdHNwYW4+CiAgICA8dHNwYW4geD0iMjAwIiBkeT0iMjAiPlB1Ymxpc2ggZXhhY3QgZXZpZGVuY2U8L3RzcGFuPgogIDwvdGV4dD4KCiAgPHJlY3QgY2xhc3M9ImZhaWwiIHg9IjQzMiIgeT0iNjQwIiB3aWR0aD0iMzM2IiBoZWlnaHQ9IjEwNCIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjYwMCIgeT0iNjc0Ij5TdGVwIDU6IEJyZWFraW5nPC90ZXh0PgogIDx0ZXh0IGNsYXNzPSJib2R5IiB4PSI2MDAiIHk9IjY5NiI+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMCI+QnJlYWtpbmcgY2hhbmdlIGZhaWxzPC90c3Bhbj4KICAgIDx0c3BhbiB4PSI2MDAiIGR5PSIxOSI+Rml4IGl0IG9yIGVudGVyIHRoZSByZXZpZXdlZDwvdHNwYW4+CiAgICA8dHNwYW4geD0iNjAwIiBkeT0iMTkiPmludGVudGlvbmFsLWNoYW5nZSBwcm9jZXNzPC90c3Bhbj4KICA8L3RleHQ+CgogIDxyZWN0IGNsYXNzPSJmYWlsIiB4PSI4MzIiIHk9IjY0MCIgd2lkdGg9IjMzNiIgaGVpZ2h0PSIxMDQiIHJ4PSI4IiAvPgogIDx0ZXh0IGNsYXNzPSJoZWFkaW5nIiB4PSIxMDAwIiB5PSI2NzQiPlN0ZXAgNjogRmFpbCBjbG9zZWQ8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImJvZHkiIHg9IjEwMDAiIHk9IjY5NiI+CiAgICA8dHNwYW4geD0iMTAwMCIgZHk9IjAiPkdlbmVyYXRpb24sIGFydGlmYWN0LCBiYXNlbGluZSw8L3RzcGFuPgogICAgPHRzcGFuIHg9IjEwMDAiIGR5PSIxOSI+ZGlnZXN0LCBvciByZXF1aXJlZC1yZXN1bHQgZXJyb3I8L3RzcGFuPgogIDwvdGV4dD4KCiAgPHRleHQgY2xhc3M9InNlY3Rpb24iIHg9IjMyIiB5PSI3OTQiPkZvbGxvdy1vbjogcmVsZWFzZSBjb25mb3JtYW5jZTwvdGV4dD4KICA8cmVjdCBjbGFzcz0icmVsZWFzZSIgeD0iODAiIHk9IjgxMiIgd2lkdGg9IjI4MCIgaGVpZ2h0PSI3OCIgcng9IjgiIC8+CiAgPHRleHQgY2xhc3M9ImhlYWRpbmciIHg9IjIyMCIgeT0iODQzIj5QaW5uZWQgcmVsZWFzZSBtYXRyaXg8L3RleHQ+CiAgPHRleHQgY2xhc3M9InNtYWxsIiB4PSIyMjAiIHk9Ijg3MCI+UHJvdmlkZXIgKyBjb25zdW1lciArIGRlcGVuZGVuY2llczwvdGV4dD4KCiAgPHBhdGggY2xhc3M9ImxpbmUiIGQ9Ik0gMzYwIDg1MSBMIDQ1OCA4NTEiIC8+CiAgPHJlY3QgY2xhc3M9InJlbGVhc2UiIHg9IjQ2MCIgeT0iODEyIiB3aWR0aD0iMjgwIiBoZWlnaHQ9Ijc4IiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iNjAwIiB5PSI4NDMiPkNyb3NzLWNvbXBvbmVudCBjb25mb3JtYW5jZTwvdGV4dD4KICA8dGV4dCBjbGFzcz0ic21hbGwiIHg9IjYwMCIgeT0iODcwIj5SdW4gd29ya2Zsb3dzIG5vIHNpbmdsZSByZXBvIGNhbiBwcm92ZTwvdGV4dD4KCiAgPHBhdGggY2xhc3M9ImxpbmUiIGQ9Ik0gNzQwIDg1MSBMIDgzOCA4NTEiIC8+CiAgPHJlY3QgY2xhc3M9InJlbGVhc2UiIHg9Ijg0MCIgeT0iODEyIiB3aWR0aD0iMjgwIiBoZWlnaHQ9Ijc4IiByeD0iOCIgLz4KICA8dGV4dCBjbGFzcz0iaGVhZGluZyIgeD0iOTgwIiB5PSI4NDMiPlByb2R1Y3QgcmVsZWFzZSBldmlkZW5jZTwvdGV4dD4KICA8dGV4dCBjbGFzcz0ic21hbGwiIHg9Ijk4MCIgeT0iODcwIj5FeGFjdCBzdXBwb3J0ZWQgdmVyc2lvbnMgYW5kIHJlc3VsdHM8L3RleHQ+Cjwvc3ZnPgo=" alt="The provider pull-request gate checks out the change, generates and validates a candidate contract, retrieves protected baselines, compares structure and behavior, and then passes compatible changes or fails breaking and integrity drift. Released versions then enter supported-matrix conformance." />
+      <figcaption>Target enforcement architecture. The API Contract testing infrastructure supplies shared checks and pointers; the first Model Catalog pilot starts in report-only mode, with release conformance as follow-on work.</figcaption>
     </figure>
 
     <h3 id="the-six-step-provider-pull-request-gate">The six-step
@@ -406,8 +422,9 @@ api-contract-central</p>
     digests, policy, modules, affected consumers, evidence, and
     remediation. In enforcement mode, the author must either make the
     change compatible or complete the separately reviewed
-    intentional-change process before the gate can pass. Report-only
-    mode is permitted only during onboarding.</p>
+    intentional-change process before the gate can pass. The pilot and
+    onboarding use report-only mode; the closeout recommendation and
+    provider/consumer agreement determine when enforcement starts.</p>
     <p>After merge, a trusted workflow publishes the accepted contract
     as a new immutable snapshot. Released component versions separately
     enter cross-component conformance against the supported RHOAI
@@ -448,6 +465,8 @@ api-contract-central</p>
     </table>
     <h2 id="a-concrete-example-opendatahub-operator">A Concrete Example:
     <code>opendatahub-operator</code></h2>
+    <p>This is a follow-on illustration of the target model, not a
+    deliverable of the first Catalog pilot.</p>
     <p>Think of the central repository as an inspection kit installed in
     each provider repository. The provider owns the building; Dashboard
     supplies a usage example; the Action inspects before merge.</p>
@@ -650,11 +669,16 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     finalizer pattern, <code>RHOAIENG-77786</code> repeated the TrustyAI
     requeue pattern, and <code>RHOAIENG-79331</code> repeated the Feast
     RBAC pattern. The Model Registry rows above concern
-    <code>model-registry-operator</code>; the
-    <code>model-registry</code> HTTP/OpenAPI pilot still needs a seeded
-    removed- operation or removed-field replay before claiming
-    equivalent evidence.</p>
+    <code>model-registry-operator</code>; the Model Catalog HTTP/OpenAPI
+    pilot still needs a seeded removed- operation or removed-field
+    replay before claiming equivalent evidence. Historical Registry
+    incidents retain their original component attribution.</p>
     <h2 id="v1-scope">V1 Scope</h2>
+    <p>This table describes the broader target scope. The first
+    executable slice covers only the Model Catalog REST v1 API consumed
+    by the Dashboard Model Catalog BFF. Operator/CRD and multi-component
+    release checks are follow-on work; other interfaces require a
+    separate scope decision.</p>
     <table>
     <thead>
     <tr>
@@ -731,9 +755,11 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     <td>Consumer repository, reviewed with provider</td>
     </tr>
     <tr>
-    <td>Standards, descriptor schemas, policies, modules, and
-    reporting</td>
-    <td>Working group through <code>api-contract-central</code></td>
+    <td>Shared compatibility policy, descriptor schemas, modules,
+    catalog, and reporting</td>
+    <td>API Contract testing infrastructure through
+    <code>api-contract-central</code>, governed by the working
+    group</td>
     </tr>
     <tr>
     <td>Cross-component conformance profile</td>
@@ -896,28 +922,30 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     calls for them.</p>
     <h3 id="provider-descriptor">Provider descriptor</h3>
     <p>The component-owned descriptor points to local sources without
-    copying them:</p>
+    copying them. This is an illustrative service descriptor, not the
+    Catalog pilot&#39;s confirmed paths, support level, or generator
+    selection:</p>
     <div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> contracts.rhoai.io/v1alpha1</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ContractSet</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> model-registry</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-service</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">supportLevel</span><span class="kw">:</span><span class="at"> stable</span></span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">candidate</span><span class="kw">:</span></span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">generator</span><span class="kw">:</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">module</span><span class="kw">:</span><span class="at"> openapi.bundle</span></span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0.0</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inputs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">api/openapi/model-registry.yaml</span><span class="kw">]</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">declaredArtifact</span><span class="kw">:</span><span class="at"> api/openapi/model-registry.yaml</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inputs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">api/openapi/src/service.yaml</span><span class="kw">]</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">declaredArtifact</span><span class="kw">:</span><span class="at"> api/openapi/service.yaml</span></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">baselines</span><span class="kw">:</span></span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rolling</span><span class="kw">:</span></span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> target-branch-latest-accepted</span></span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">releases</span><span class="kw">:</span></span>
 <span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> all-supported</span></span>
 <span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">contracts</span><span class="kw">:</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> model-registry-rest</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> example-service-rest</span></span>
 <span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> openapi</span></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">source</span><span class="kw">:</span><span class="at"> api/openapi/model-registry.yaml</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">source</span><span class="kw">:</span><span class="at"> api/openapi/src/service.yaml</span></span>
 <span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">policy</span><span class="kw">:</span><span class="at"> stable-v1</span></span>
 <span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">modules</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">openapi.breaking-diff</span><span class="kw">,</span><span class="at"> openapi.policy</span><span class="kw">]</span></span></code></pre></div>
     <p>Contract location, contract type, baseline, and policy remain
@@ -953,14 +981,20 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     <code>opendatahub-io/api-contract-central/actions/check@v0</code>
     after checkout. The same engine runs locally:</p>
     <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">rhoai-contract</span> check <span class="at">--contract-set</span> .rhoai/contracts.yaml <span class="at">--mode</span> report</span></code></pre></div>
-    <p>The readable <code>v0</code> tag is suitable for the report-only
-    pilot. Required workflows must pin the approved commit or signed
-    image digest and receive explicit update pull requests.</p>
+    <p>The readable <code>v0</code> tag illustrates report-only
+    onboarding. The Catalog pilot uses a pinned OpenAPI check; the full
+    reusable runner/workflow above is target tooling. Required workflows
+    must pin the approved commit or signed image digest and receive
+    explicit update pull requests.</p>
     <h2 id="pilot-cohort">Pilot Cohort</h2>
-    <p>The pilot has three provider repositories plus Dashboard in the
-    consumer role.</p>
-    <h3 id="model-registry-conventional-service-api"><code>model-registry</code>:
-    conventional service API</h3>
+    <p>The first pilot is the Model Catalog service consumed by
+    Dashboard. The broader cohort includes
+    <code>opendatahub-operator</code> and
+    <code>workbenches-operator</code> as follow-on providers; their
+    modules and profiles are not required in the first two-week
+    slice.</p>
+    <h3 id="model-catalog-first-service-api-pilot">Model Catalog: first
+    service API pilot</h3>
     <ul>
     <li>Generate or bundle the candidate OpenAPI artifact from the
     pull-request source on every run, then verify it against any
@@ -973,11 +1007,18 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     subset.</li>
     <li>Keep a Dashboard-owned profile of the operations and semantics
     its BFF/client consumes.</li>
-    <li>Prove the path by seeding one incompatible change to a consumed
-    operation or response.</li>
+    <li>Cover model/version list and lookup, pagination, not-found, and
+    authorization behavior as described in the stakeholder brief;
+    confirm their mapping to Catalog operations and fixtures.</li>
+    <li>Confirm the Catalog OpenAPI source/output paths, generation
+    target, wire API version, and supported-release revision before
+    implementation; see the <a href="../../pilot/model-registry-dashboard.md">pilot
+    detail</a>.</li>
+    <li>Prove the path with additive, incompatible, and
+    stale-generated-artifact changes in report mode.</li>
     </ul>
-    <h3 id="opendatahub-operator-crd-and-upgrade-behavior"><code>opendatahub-operator</code>:
-    CRD and upgrade behavior</h3>
+    <h3 id="opendatahub-operator-follow-on-crd-and-upgrade-behavior"><code>opendatahub-operator</code>:
+    follow-on CRD and upgrade behavior</h3>
     <ul>
     <li>Regenerate candidate CRDs from the pull-request Go types with
     the provider&#39;s pinned generation adapter and fail when they differ
@@ -994,8 +1035,8 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     <li>Prove the path with a removed consumed field, tightened
     validation, or broken version conversion.</li>
     </ul>
-    <h3 id="workbenches-operator-cross-repository-notebook-integration"><code>workbenches-operator</code>:
-    cross-repository Notebook integration</h3>
+    <h3 id="workbenches-operator-follow-on-cross-repository-notebook-integration"><code>workbenches-operator</code>:
+    follow-on cross-repository Notebook integration</h3>
     <ul>
     <li>Regenerate the provider-owned Workbenches CRD and related
     candidate artifacts from pull-request source; fail
@@ -1049,90 +1090,89 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     recorded.</p>
     <h2 id="proposed-two-week-thin-slice">Proposed Two-Week Thin
     Slice</h2>
+    <p><strong>Proposed execution: October 5–16, 2026.</strong> This
+    slice implements only the Model Catalog–Dashboard boundary. The
+    recommendation is proposed for October 16; pilot approval and dates
+    remain pending.</p>
     <h3 id="week-1-agree-and-scaffold">Week 1: Agree and scaffold</h3>
     <ul>
-    <li>Approve charter, taxonomy, ownership, breaking-change
-    definition, and the three boundaries.</li>
-    <li>Name one representative for each provider and agree support
-    levels and baselines.</li>
-    <li>Scaffold the central repository, schemas, pointer catalog,
-    module protocol, local runner, common finding format, and
-    report-only workflow.</li>
-    <li>Draft one provider descriptor and one Dashboard consumer profile
-    per pilot.</li>
+    <li>Confirm execution responsibilities for Edson Tirelli / Model
+    Catalog and Anthony Coughlin / Dashboard, using the representatives
+    named in the brief.</li>
+    <li>Confirm the Catalog source/output paths, generator, consumed
+    wire API version, support level, and protected branch and
+    supported-release baselines with productization.</li>
+    <li>Integrate a pinned report-only OpenAPI check and register the
+    provider contract pointer.</li>
+    <li>Add the Dashboard provider-facing Catalog consumer profile and
+    bounded behavior checks.</li>
     </ul>
     <h3 id="week-2-execute-and-decide">Week 2: Execute and decide</h3>
     <ul>
-    <li>Implement one thin executable module/profile for each pilot
-    boundary.</li>
-    <li>Open report-mode CI changes in all three provider
-    repositories.</li>
-    <li>Run one positive and one seeded-negative scenario for each
-    boundary.</li>
-    <li>Publish a scorecard, outstanding gaps, policy one-pager, and
-    enforce/no-enforce recommendation.</li>
+    <li>Run compatible, breaking, and stale-generated-artifact scenarios
+    on the Catalog boundary.</li>
+    <li>Validate feedback on at least one real provider pull
+    request.</li>
+    <li>Verify results are reproducible locally and arrive in under five
+    minutes without a cluster.</li>
+    <li>Publish a scorecard, outstanding gaps, reusable onboarding
+    template, and an enforce/continue-reporting recommendation.</li>
     </ul>
-    <p>Dates for the first working-group session and final pilot
-    recommendation must be agreed when the group accepts this
-    proposal.</p>
     <h2 id="pilot-success-measures">Pilot Success Measures</h2>
     <ul>
-    <li>All three providers have named owners, descriptors, consumer
-    profiles, and CI integration.</li>
-    <li>Every pull request produces a normalized candidate from source
-    and records its digest.</li>
-    <li>Generated candidates match declared committed artifacts, and
-    results name every baseline SHA or digest used.</li>
-    <li>All seeded incompatible changes and selected historical replays
-    produce actionable diagnostics.</li>
-    <li>A seeded removal of an additively introduced post-release field
-    is caught by the rolling accepted snapshot.</li>
-    <li>No canonical provider specification is duplicated
-    centrally.</li>
-    <li>Local and CI execution resolve the same baseline, policy,
-    modules, and result.</li>
-    <li>Adding CI after a descriptor exists takes no more than 30
-    minutes.</li>
-    <li>No unexplained false positive remains at pilot close.</li>
-    <li>Enforcement starts only after report-mode stability and
-    provider/consumer agreement.</li>
-    <li>Release results identify the exact supported component and
-    dependency revisions.</li>
+    <li>Seeded incompatibilities and stale generated artifacts are
+    detected with actionable feedback.</li>
+    <li>An additive change passes the checks.</li>
+    <li>Feedback arrives in under five minutes without a cluster.</li>
+    <li>Results are reproducible locally using the same protected
+    baselines and policy as CI.</li>
+    <li>At least one real pull request runs without an unexplained false
+    block.</li>
+    <li>Closeout provides a scorecard, reusable onboarding template, and
+    an enforce/continue-reporting recommendation. Enforcement follows
+    stable report-mode evidence and owner agreement.</li>
     </ul>
+    <p>Fresh generation, immutable baseline evidence, and the
+    pointer-only catalog remain architecture requirements. Operator
+    onboarding and exact-revision cross-component release evidence are
+    follow-on goals, not first-pilot exit criteria.</p>
     <h2 id="initial-roles-and-open-decisions">Initial Roles and Open
     Decisions</h2>
     <table>
     <thead>
     <tr>
     <th>Role</th>
-    <th>Initial representative</th>
+    <th>Proposed representative / commitment</th>
     </tr>
     </thead>
     <tbody>
     <tr>
-    <td>Working-group facilitator</td>
+    <td>Facilitation</td>
     <td>Edson Tirelli</td>
     </tr>
     <tr>
-    <td>Dashboard consumer representative</td>
-    <td>Anthony Coughlin</td>
+    <td>Consumer profile and tests</td>
+    <td>Anthony Coughlin / Dashboard</td>
     </tr>
     <tr>
-    <td>Productization representatives</td>
-    <td>Rishab Prasad and Radim Kubis</td>
+    <td>Provider implementation and checks</td>
+    <td>Edson Tirelli / Model Catalog</td>
     </tr>
     <tr>
-    <td>Provider representatives</td>
-    <td>One named maintainer from each pilot repository</td>
+    <td>Supported-release baseline</td>
+    <td>Rishab Prasad / Radim Kubis; confirm provider revision</td>
     </tr>
     </tbody>
     </table>
-    <p>The group must confirm the final repository name, support-level
-    definitions, baseline rules, exception review, first release matrix,
-    meeting date, and recommendation date. All CRDs are a candidate
-    low-friction expansion after the pilot. Model Catalog and MCP
-    Catalog remain future cohort discussion; other non-pilot components
-    are deferred.</p>
+    <p>The first pilot still needs approval, confirmation of the Catalog
+    contract details and supported-release revision, and acceptance of
+    the proposed October 5–16 dates. Its provider and consumer
+    representatives are already named in the stakeholder brief. The
+    broader operating model still needs a final infrastructure
+    repository name, support-level definitions, exception review, and a
+    release matrix. Operator/CRD checks and cross-component release
+    conformance are follow-on work; other interfaces require a separate
+    scope decision.</p>
     <h2 id="guardrails">Guardrails</h2>
     <ul>
     <li>Keep canonical provider contracts and provider tests beside
@@ -1160,6 +1200,11 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     </ul>
     <h2 id="sources">Sources</h2>
     <ul>
+    <li><a href="../../stakeholder-brief.md">One-page stakeholder
+    brief</a> — authoritative current scope, representatives, proposed
+    dates, and success criteria.</li>
+    <li><a href="../../pilot/model-registry-dashboard.md">Model
+    Catalog–Dashboard pilot detail</a></li>
     <li>Recent RHOAI API Contract Layer working-group notes supplied
     with this proposal.</li>
     <li><a href="../../research/dashboard-integration-gap-analysis.html">Dashboard
