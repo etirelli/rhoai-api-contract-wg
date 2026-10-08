@@ -4,7 +4,7 @@
 
 - **Status:** Target architecture proposal; Model Catalog pilot awaiting approval
 - **Working repository name:** `api-contract-central`
-- **Updated:** 2026-10-01
+- **Updated:** 2026-10-07
 
 > **Source of truth:** The [one-page stakeholder brief](../stakeholder-brief.md) defines current
 > scope, representatives, proposed dates, and success criteria. This proposal elaborates the
@@ -184,6 +184,35 @@ A change is potentially breaking when it:
 
 The checks detect changes. The API's support level and policy decide whether a detected change is
 forbidden, warning-only, or allowed with an approved migration plan.
+
+### Compatibility direction and level
+
+Name the compatibility guarantee explicitly instead of leaving "breaking" implicit. This proposal
+adopts the vocabulary established by schema registries such as Confluent and Red Hat's Apicurio:
+
+- **Backward compatible:** a new provider still serves consumers written against the previous
+  contract (adds optional fields or operations). Consumers may upgrade after the provider.
+- **Forward compatible:** a consumer written against the previous contract can still read data from
+  the new provider. Producers may upgrade after consumers.
+- **Full:** both directions hold, so either side can upgrade first.
+- **Transitive:** the candidate is checked against every still-supported version, not only the
+  latest. The required-baseline set in this design — the rolling accepted snapshot plus all
+  supported-release snapshots — is a transitive check by construction.
+
+Each support level maps to a named mode recorded in the policy files: stable interfaces require at
+least full-transitive compatibility against every supported release; preview interfaces require
+backward-transitive; experimental interfaces may require none.
+
+State the compatibility *level* per contract type as well, because "additive" is not always safe:
+
+| Contract type | Compatibility level enforced |
+|---|---|
+| HTTP/REST (OpenAPI) | Wire and response-shape compatibility for the consumed operations. |
+| gRPC/protobuf | A recorded Buf category: wire, wire+JSON, or source/codegen. A field renumber is wire-breaking; a field rename can be wire-safe but source-breaking for generated clients. |
+| Kubernetes CRD | Schema, served/storage version, and conversion compatibility under the Kubernetes deprecation rules. |
+
+A change that is additive at the wire level can still break generated client code; the recorded
+level decides whether that fails the gate.
 
 ## Ownership Model
 
@@ -388,7 +417,17 @@ are not required in the first two-week slice.
 - Check removed operations/fields and incompatible input, default, response, status, error, and
   authorization changes.
 - Run provider-native response conformance for the Dashboard-used subset.
-- Keep a Dashboard-owned profile of the operations and semantics its BFF/client consumes.
+- Self-verify the generated OpenAPI against the running provider so the spec reflects real behavior,
+  not just source annotations. Exercise the Dashboard-used operations against the service — a Dredd-
+  or Schemathesis-style check — and fail when a response diverges from the generated contract. This
+  closes the known weakness of static spec diffing: a diff is only trustworthy if the spec matches
+  reality.
+- Maintain the Dashboard-owned profile as an explicit, versioned list of the Catalog operations,
+  fields, and status codes the BFF depends on — a registered-operations list in the sense Apollo's
+  GraphQL schema checks use. A removed or narrowed element that appears in this list fails the gate.
+  Because the list is explicit rather than inferred from captured traffic, it also protects
+  operations a consumer feature will use but has not shipped yet, which a usage-window-only check
+  would miss.
 - Cover model/version list and lookup, pagination, not-found, and authorization behavior as
   described in the stakeholder brief; confirm their mapping to Catalog operations and fixtures.
 - Confirm the Catalog OpenAPI source/output paths, generation target, wire API version, and
@@ -404,6 +443,16 @@ are not required in the first two-week slice.
 - Check type, required-field, enum, default, validation, version, and conversion compatibility.
 - Import provider-owned reconciliation, status/readiness, and upgrade results.
 - Keep Dashboard expectations for the DSC/DSCI fields and conditions it reads.
+- Align the gate's CRD rules with the Kubernetes deprecation policy and with OLM's own upgrade
+  checks so they reinforce rather than conflict: a served version cannot be removed before it is set
+  `served: false`, a required field cannot be added to an existing version, stored objects must still
+  validate, and a storage-version change must carry a conversion path. OLM already enforces several
+  of these at install and upgrade; the pull-request gate moves the signal earlier.
+- Add a Go API-surface check (`go-apidiff`) alongside the CRD diff for types other repositories
+  consume as a library.
+- For the CRD schema diff itself, evaluate OLM's built-in checks and semantic CRD differs such as
+  KRO's detector or Flecto. A standalone tool named `crd-diff` was not confirmed to exist under that
+  name; verify any tool before pinning it.
 - Prove the path with a removed consumed field, tightened validation, or broken version conversion.
 
 ### `workbenches-operator`: follow-on cross-repository Notebook integration
@@ -445,6 +494,11 @@ Use three enforcement points:
 2. **Intentional breaking change:** reviewed migration/deprecation record naming consumers, dates,
    support level, release target, and DRI.
 3. **Release conformance:** supported provider, consumer, and dependency versions run together.
+
+For HTTP/REST interfaces, signal a planned break in-band as well as in the migration record: emit the
+machine-readable `Deprecation` and `Sunset` response headers (RFC 9745 and RFC 8594) with a stated
+notice window before removal, following the Zalando REST API guidelines. Consumers and the gate can
+then observe the deprecation programmatically rather than relying on out-of-band communication.
 
 Exceptions require an owner, rationale, issue, expiry, and provider/consumer approval. The policy
 for stable, preview, and experimental interfaces may differ, but every change is detected and
@@ -508,11 +562,17 @@ work; other interfaces require a separate scope decision.
 - Keep the central catalog pointer-only.
 - Generate a normalized candidate from pull-request source on every run; do not trust a stale
   committed artifact as the candidate.
+- Self-verify the generated contract against the running provider where feasible, so a spec that has
+  drifted from real behavior cannot silently pass the diff.
 - Resolve baseline selection, generator policy, and enforcement policy from protected target-branch
   configuration. A pull request cannot weaken the checks used to assess itself.
 - Publish baselines only through trusted post-merge or release workflows and verify full SHAs or
   content digests.
-- Treat schema checks as one compatibility signal, not the complete guarantee.
+- Treat schema checks as one compatibility signal, not the complete guarantee. A change can be
+  wire-compatible yet semantically breaking — a changed unit, identifier format, or default the
+  schema still accepts. The `1000` versus `1,000` response-format break in RHOAIENG-87929 from the
+  gap analysis would pass any spec diff. Required provider behavior tests, consumer-profile checks,
+  and human review remain necessary; the gate narrows risk, it does not eliminate it.
 - Keep Dashboard full end-to-end tests out of the provider pull-request gate.
 - Pin required CI tooling and policy revisions.
 - Allow only reviewed modules; treat descriptors and test output as untrusted input.
@@ -531,3 +591,7 @@ work; other interfaces require a separate scope decision.
 - [`opendatahub-io/model-registry`](https://github.com/opendatahub-io/model-registry)
 - [`opendatahub-io/opendatahub-operator`](https://github.com/opendatahub-io/opendatahub-operator)
 - [`opendatahub-io/workbenches-operator`](https://github.com/opendatahub-io/workbenches-operator)
+- External practice referenced above: Confluent and Apicurio schema-registry compatibility modes,
+  Buf protobuf breaking-change categories, Apollo GraphQL schema and operation checks, the Kubernetes
+  API deprecation policy and OLM CRD upgrade checks, and the Zalando REST API guidelines
+  (`Deprecation`/`Sunset` headers, RFC 9745 and RFC 8594).
