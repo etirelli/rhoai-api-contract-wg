@@ -11,7 +11,7 @@ until the named person confirms them. Current representatives and scope follow t
 | A-003 | Agree provider/consumer execution responsibilities using the named representatives | Edson Tirelli / Anthony Coughlin | Before proposed October 5 start | Open |
 | A-004 | Confirm the supported RHOAI Model Catalog revision used as release baseline | Rishab Prasad / Radim Kubis | Before proposed October 5 start | Open |
 | A-005 | Accept or adjust the proposed October 5–16 pilot window | Working group | Before proposed October 5 start | Open |
-| A-006 | Implement the pinned, report-only Model Catalog OpenAPI compatibility check | Edson Tirelli / Model Catalog | Week 1 | Awaiting approval and A-002/A-004 |
+| A-006 | Implement the pinned, report-only Model Catalog OpenAPI compatibility check | Edson Tirelli / Model Catalog | Week 1 | Awaiting approval and A-002/A-004; the check itself is now generalized into the `openapi-compat` module (A-015), not yet wired into provider CI |
 | A-007 | Add provider-facing Catalog list/lookup, pagination, not-found, and authorization coverage | Anthony Coughlin / Dashboard | Week 1 | Awaiting approval and A-002/A-003 |
 | A-008 | Run compatible, breaking, and stale-artifact scenarios and validate at least one real PR | Edson Tirelli / Anthony Coughlin | Week 2 | Not started |
 | A-009 | Publish scorecard and enforce/continue-reporting recommendation | Edson Tirelli | 2026-10-16 | Not started |
@@ -20,3 +20,4 @@ until the named person confirms them. Current representatives and scope follow t
 | A-012 | Register rolling and supported-release baselines as full provider SHAs with artifact digests; do not add a mutable baseline copy | Edson Tirelli / Rishab Prasad / Radim Kubis | Before implementation | Open; blocks A-006 |
 | A-013 | Select and pin exact contract tool, policy, and reusable-workflow revisions; reject `main`, `latest`, and `@latest` inputs (re-evaluates the superseded `oasdiff` pick in D-005) | Edson Tirelli / API Contract testing infrastructure | Before implementation | Open; blocks A-006 |
 | A-014 | Implement schema-aware consumer-profile verification covering operations, parameters, response fields, and status codes | Anthony Coughlin / Dashboard | Before seeded scenarios | Open; blocks A-008 |
+| A-015 | Wire the generalized `openapi-compat` module's reusable workflow into model-registry's real CI, and repoint it at the official `api-contract-central` once created | Edson Tirelli / API Contract testing infrastructure | After pilot approval | Open; module and local CLI exist (D-014), workflow drafted but unwired |
