@@ -329,7 +329,7 @@ pilot proposal</p>
     Catalog pilot awaiting approval</li>
     <li><strong>Working repository name:</strong>
     <code>api-contract-central</code></li>
-    <li><strong>Updated:</strong> 2026-10-01</li>
+    <li><strong>Updated:</strong> 2026-10-07</li>
     </ul>
     <blockquote>
     <p><strong>Source of truth:</strong> The <a href="../../stakeholder-brief.md">one-page stakeholder brief</a>
@@ -733,6 +733,63 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     <p>The checks detect changes. The API&#39;s support level and policy
     decide whether a detected change is forbidden, warning-only, or
     allowed with an approved migration plan.</p>
+    <h3 id="compatibility-direction-and-level">Compatibility direction
+    and level</h3>
+    <p>Name the compatibility guarantee explicitly instead of leaving
+    &quot;breaking&quot; implicit. This proposal adopts the vocabulary established
+    by schema registries such as Confluent and Red Hat&#39;s Apicurio:</p>
+    <ul>
+    <li><strong>Backward compatible:</strong> a new provider still
+    serves consumers written against the previous contract (adds
+    optional fields or operations). Consumers may upgrade after the
+    provider.</li>
+    <li><strong>Forward compatible:</strong> a consumer written against
+    the previous contract can still read data from the new provider.
+    Producers may upgrade after consumers.</li>
+    <li><strong>Full:</strong> both directions hold, so either side can
+    upgrade first.</li>
+    <li><strong>Transitive:</strong> the candidate is checked against
+    every still-supported version, not only the latest. The
+    required-baseline set in this design — the rolling accepted snapshot
+    plus all supported-release snapshots — is a transitive check by
+    construction.</li>
+    </ul>
+    <p>Each support level maps to a named mode recorded in the policy
+    files: stable interfaces require at least full-transitive
+    compatibility against every supported release; preview interfaces
+    require backward-transitive; experimental interfaces may require
+    none.</p>
+    <p>State the compatibility <em>level</em> per contract type as well,
+    because &quot;additive&quot; is not always safe:</p>
+    <table>
+    <thead>
+    <tr>
+    <th>Contract type</th>
+    <th>Compatibility level enforced</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>HTTP/REST (OpenAPI)</td>
+    <td>Wire and response-shape compatibility for the consumed
+    operations.</td>
+    </tr>
+    <tr>
+    <td>gRPC/protobuf</td>
+    <td>A recorded Buf category: wire, wire+JSON, or source/codegen. A
+    field renumber is wire-breaking; a field rename can be wire-safe but
+    source-breaking for generated clients.</td>
+    </tr>
+    <tr>
+    <td>Kubernetes CRD</td>
+    <td>Schema, served/storage version, and conversion compatibility
+    under the Kubernetes deprecation rules.</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>A change that is additive at the wire level can still break
+    generated client code; the recorded level decides whether that fails
+    the gate.</p>
     <h2 id="ownership-model">Ownership Model</h2>
     <table>
     <thead>
@@ -1005,8 +1062,21 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     response, status, error, and authorization changes.</li>
     <li>Run provider-native response conformance for the Dashboard-used
     subset.</li>
-    <li>Keep a Dashboard-owned profile of the operations and semantics
-    its BFF/client consumes.</li>
+    <li>Self-verify the generated OpenAPI against the running provider
+    so the spec reflects real behavior, not just source annotations.
+    Exercise the Dashboard-used operations against the service — a
+    Dredd- or Schemathesis-style check — and fail when a response
+    diverges from the generated contract. This closes the known weakness
+    of static spec diffing: a diff is only trustworthy if the spec
+    matches reality.</li>
+    <li>Maintain the Dashboard-owned profile as an explicit, versioned
+    list of the Catalog operations, fields, and status codes the BFF
+    depends on — a registered-operations list in the sense Apollo&#39;s
+    GraphQL schema checks use. A removed or narrowed element that
+    appears in this list fails the gate. Because the list is explicit
+    rather than inferred from captured traffic, it also protects
+    operations a consumer feature will use but has not shipped yet,
+    which a usage-window-only check would miss.</li>
     <li>Cover model/version list and lookup, pagination, not-found, and
     authorization behavior as described in the stakeholder brief;
     confirm their mapping to Catalog operations and fixtures.</li>
@@ -1032,6 +1102,20 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     upgrade results.</li>
     <li>Keep Dashboard expectations for the DSC/DSCI fields and
     conditions it reads.</li>
+    <li>Align the gate&#39;s CRD rules with the Kubernetes deprecation
+    policy and with OLM&#39;s own upgrade checks so they reinforce rather
+    than conflict: a served version cannot be removed before it is set
+    <code>served: false</code>, a required field cannot be added to an
+    existing version, stored objects must still validate, and a
+    storage-version change must carry a conversion path. OLM already
+    enforces several of these at install and upgrade; the pull-request
+    gate moves the signal earlier.</li>
+    <li>Add a Go API-surface check (<code>go-apidiff</code>) alongside
+    the CRD diff for types other repositories consume as a library.</li>
+    <li>For the CRD schema diff itself, evaluate OLM&#39;s built-in checks
+    and semantic CRD differs such as KRO&#39;s detector or Flecto. A
+    standalone tool named <code>crd-diff</code> was not confirmed to
+    exist under that name; verify any tool before pinning it.</li>
     <li>Prove the path with a removed consumed field, tightened
     validation, or broken version conversion.</li>
     </ul>
@@ -1084,6 +1168,13 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     <li><strong>Release conformance:</strong> supported provider,
     consumer, and dependency versions run together.</li>
     </ol>
+    <p>For HTTP/REST interfaces, signal a planned break in-band as well
+    as in the migration record: emit the machine-readable
+    <code>Deprecation</code> and <code>Sunset</code> response headers
+    (RFC 9745 and RFC 8594) with a stated notice window before removal,
+    following the Zalando REST API guidelines. Consumers and the gate
+    can then observe the deprecation programmatically rather than
+    relying on out-of-band communication.</p>
     <p>Exceptions require an owner, rationale, issue, expiry, and
     provider/consumer approval. The policy for stable, preview, and
     experimental interfaces may differ, but every change is detected and
@@ -1181,13 +1272,22 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     <li>Generate a normalized candidate from pull-request source on
     every run; do not trust a stale committed artifact as the
     candidate.</li>
+    <li>Self-verify the generated contract against the running provider
+    where feasible, so a spec that has drifted from real behavior cannot
+    silently pass the diff.</li>
     <li>Resolve baseline selection, generator policy, and enforcement
     policy from protected target-branch configuration. A pull request
     cannot weaken the checks used to assess itself.</li>
     <li>Publish baselines only through trusted post-merge or release
     workflows and verify full SHAs or content digests.</li>
     <li>Treat schema checks as one compatibility signal, not the
-    complete guarantee.</li>
+    complete guarantee. A change can be wire-compatible yet semantically
+    breaking — a changed unit, identifier format, or default the schema
+    still accepts. The <code>1000</code> versus <code>1,000</code>
+    response-format break in RHOAIENG-87929 from the gap analysis would
+    pass any spec diff. Required provider behavior tests,
+    consumer-profile checks, and human review remain necessary; the gate
+    narrows risk, it does not eliminate it.</li>
     <li>Keep Dashboard full end-to-end tests out of the provider
     pull-request gate.</li>
     <li>Pin required CI tooling and policy revisions.</li>
@@ -1214,6 +1314,13 @@ Proposed: provider PR -&gt; generate candidate + apply Dashboard fixture -&gt; p
     <li><a href="https://github.com/opendatahub-io/model-registry"><code>opendatahub-io/model-registry</code></a></li>
     <li><a href="https://github.com/opendatahub-io/opendatahub-operator"><code>opendatahub-io/opendatahub-operator</code></a></li>
     <li><a href="https://github.com/opendatahub-io/workbenches-operator"><code>opendatahub-io/workbenches-operator</code></a></li>
+    <li>External practice referenced above: Confluent and Apicurio
+    schema-registry compatibility modes, Buf protobuf breaking-change
+    categories, Apollo GraphQL schema and operation checks, the
+    Kubernetes API deprecation policy and OLM CRD upgrade checks, and
+    the Zalando REST API guidelines
+    (<code>Deprecation</code>/<code>Sunset</code> headers, RFC 9745 and
+    RFC 8594).</li>
     </ul>
   </main>
 </body>
