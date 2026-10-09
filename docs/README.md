@@ -10,8 +10,9 @@
 ## Pilot
 
 - [Model Catalog–Dashboard API Contract Pilot](pilot/model-registry-dashboard.md) — first slice,
-  contract boundary, baselines, representatives, proposed dates, and exit criteria. The existing
-  filename is retained so the source brief's link continues to work.
+  verified upstream boundary, immutable baseline design, implementation steps, representatives,
+  proposed dates, and exit criteria. The existing filename is retained so the source brief's link
+  continues to work.
 
 ## Architecture
 

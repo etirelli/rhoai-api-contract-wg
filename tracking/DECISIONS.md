@@ -15,6 +15,9 @@ Superseded rows retain the history; they do not define the current pilot.
 | D-008 | 2026-10-01 | Proposed | Use Model Catalog REST v1 consumed by the Dashboard Model Catalog BFF as the first executable pilot, October 5–16. | Current source brief names Edson Tirelli for the provider and facilitation, Anthony Coughlin for Dashboard, and Rishab Prasad / Radim Kubis for the baseline. Pilot approval and dates remain pending. |
 | D-009 | 2026-10-01 | Accepted | Treat `docs/stakeholder-brief.md` as the source of truth for current scope, representatives, proposed dates, and success criteria. | User instruction; detailed plans and rendered documents must follow the brief. |
 | D-010 | 2026-10-01 | Pending | Select the supported-release Model Catalog revision and confirm the Dashboard-consumed wire API version. | Productization confirms the immutable release baseline; provider/consumer representatives confirm the concrete Catalog contract. |
+| D-011 | 2026-10-09 | Proposed | Resolve baselines as immutable provider revisions and content digests recorded in the working-group pointer catalog. | A pull request must not be able to move or overwrite the baseline used to assess itself; no baseline schema copy is added to the provider repository. |
+| D-012 | 2026-10-09 | Proposed | Pin every required compatibility tool, policy, module, and reusable workflow to an exact version or full commit SHA. | Reproducibility and supply-chain control rule out `main`, `latest`, `@latest`, and moving tags as required inputs. |
+| D-013 | 2026-10-09 | Proposed | Make consumer-profile verification schema-aware and require coverage of operations, parameters, response fields, and status codes. | Path-existence checks cannot detect removed or narrowed consumer reliance, which is a primary goal of the pilot. |
 
 ## Recording a decision
 
