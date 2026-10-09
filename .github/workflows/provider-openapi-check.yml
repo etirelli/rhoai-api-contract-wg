@@ -1,0 +1,93 @@
+# DRAFT — not wired into any provider's live CI yet. A-006 is still blocked
+# on pilot approval (see tracking/ACTIONS.md), and tool provisioning below
+# is illustrative, not verified end to end. This documents the intended
+# shape of the reusable workflow once this repository (or its successor,
+# api-contract-central) is referenced by a provider with `uses:`, per the
+# "Simple Team Onboarding" section of docs/architecture/proposal.md.
+#
+# Until this is wired up, run the equivalent check locally — see
+# docs/onboarding/openapi-compat.md.
+name: Provider OpenAPI compatibility check (draft, unwired)
+
+on:
+  workflow_call:
+    inputs:
+      contract-set:
+        description: Path to the provider's ContractSet descriptor, relative to its repo root
+        required: true
+        type: string
+      contract-id:
+        description: Contract id to run; omit if the descriptor registers exactly one
+        required: false
+        type: string
+      mode:
+        description: "'report' (default) or 'enforce'"
+        required: false
+        type: string
+        default: report
+      baseline-refs:
+        description: Space-separated trusted Git revisions (full SHAs) to compare against
+        required: true
+        type: string
+      oasdiff-version:
+        description: Exact oasdiff version to install, matching the descriptor's policy.oasdiffVersion
+        required: true
+        type: string
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out provider repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out central tooling
+        uses: actions/checkout@v4
+        with:
+          # TODO: point at the official api-contract-central repository,
+          # pinned to an exact commit SHA, once it exists. This placeholder
+          # checks out this working-group repository instead.
+          repository: etirelli/rhoai-api-contract-wg
+          ref: TODO-pin-to-exact-commit-sha
+          path: .api-contract-central
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install pinned oasdiff
+        run: GOBIN="$PWD/bin" go install "github.com/oasdiff/oasdiff@v${{ inputs.oasdiff-version }}"
+
+      - name: Resolve the provider's pinned yq
+        # Provider-specific: however this repository already pins yq for its
+        # own bundler (e.g. `make bin/yq`). Not generalized here.
+        run: test -x bin/yq || { echo "This workflow assumes bin/yq is already pinned by the provider repo" >&2; exit 2; }
+
+      - name: Run compatibility check
+        env:
+          OASDIFF: ${{ github.workspace }}/bin/oasdiff
+          YQ: ${{ github.workspace }}/bin/yq
+        run: |
+          set -euo pipefail
+          args=(--repo "$PWD" --contract-set "${{ inputs.contract-set }}" --output-dir "$PWD/.contract-report")
+          if [ -n "${{ inputs.contract-id }}" ]; then
+            args+=(--contract-id "${{ inputs.contract-id }}")
+          fi
+          for ref in ${{ inputs.baseline-refs }}; do
+            args+=(--baseline-ref "$ref")
+          done
+          if [ "${{ inputs.mode }}" = "enforce" ]; then
+            args+=(--enforce)
+          fi
+          python3 .api-contract-central/cmd/rhoai-contract/cli.py check "${args[@]}"
+
+      - name: Archive report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-report
+          path: .contract-report

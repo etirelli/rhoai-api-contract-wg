@@ -18,6 +18,7 @@ Superseded rows retain the history; they do not define the current pilot.
 | D-011 | 2026-10-09 | Proposed | Resolve baselines as immutable provider revisions and content digests recorded in the working-group pointer catalog. | A pull request must not be able to move or overwrite the baseline used to assess itself; no baseline schema copy is added to the provider repository. |
 | D-012 | 2026-10-09 | Proposed | Pin every required compatibility tool, policy, module, and reusable workflow to an exact version or full commit SHA. | Reproducibility and supply-chain control rule out `main`, `latest`, `@latest`, and moving tags as required inputs. |
 | D-013 | 2026-10-09 | Proposed | Make consumer-profile verification schema-aware and require coverage of operations, parameters, response fields, and status codes. | Path-existence checks cannot detect removed or narrowed consumer reliance, which is a primary goal of the pilot. |
+| D-014 | 2026-10-09 | Accepted | Host the generalized `openapi-compat` module, its `rhoai-contract` CLI, the `ContractSet` descriptor schema, and onboarding docs in this repository as a placeholder for `api-contract-central` until that repository is created. | User instruction. Avoids re-implementing or copying the Model Catalog pilot's checker logic per repository ([A-002] prototype) while there is no official central repository yet; paths will need to be repointed once one exists. |
 
 ## Recording a decision
 

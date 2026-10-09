@@ -36,14 +36,26 @@ that brief; the architecture also describes the longer-term operating model.
 
 ## Repository layout
 
+This repository also serves as a **placeholder for `api-contract-central`**
+until that repository is created (see `tracking/DECISIONS.md`, D-014): the
+reusable checking engine and its onboarding material live here at the paths
+a real `api-contract-central` would use, so provider repos can adopt it now
+and repoint to the official repository later with minimal change.
+
 ```text
 .
 ├── README.md
 ├── docs/
 │   ├── README.md
 │   ├── architecture/       # Target architecture, diagram, and rendered version
+│   ├── onboarding/         # Provider onboarding guides for central modules
 │   ├── pilot/              # Approved or proposed pilot definitions
 │   └── research/           # Supporting evidence and gap analysis
+├── modules/
+│   └── openapi-compat/     # Provider-agnostic OpenAPI compatibility engine
+├── schemas/                # Provider ContractSet descriptor schema
+├── cmd/rhoai-contract/     # Local/CI runner CLI over the modules above
+├── .github/workflows/      # Draft reusable workflow (not yet wired to live CI)
 └── tracking/
     ├── STATUS.md           # Phase, milestone, risk, and blocker summary
     ├── ACTIONS.md          # Named and dated follow-up work
