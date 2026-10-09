@@ -6,7 +6,7 @@ until the named person confirms them. Current representatives and scope follow t
 
 | ID | Action | Proposed owner | Target | State |
 |---|---|---|---|---|
-| A-001 | Link the authoritative brief and Model Catalog pilot from RHOAIENG-96904 and request approval | Edson Tirelli | 2026-10-01 | Ready |
+| A-001 | Link the authoritative brief and Model Catalog pilot from RHOAIENG-96904 and request approval | Edson Tirelli | 2026-10-01 | Overdue; approval not yet granted |
 | A-002 | Confirm Catalog OpenAPI paths, generation target, consumed wire API version, and consumer operations | Edson Tirelli / Anthony Coughlin | Before proposed October 5 start | Open |
 | A-003 | Agree provider/consumer execution responsibilities using the named representatives | Edson Tirelli / Anthony Coughlin | Before proposed October 5 start | Open |
 | A-004 | Confirm the supported RHOAI Model Catalog revision used as release baseline | Rishab Prasad / Radim Kubis | Before proposed October 5 start | Open |
@@ -18,5 +18,5 @@ until the named person confirms them. Current representatives and scope follow t
 | A-010 | Clarify `!MaaS` for broader follow-on scope | Working group | Follow-on planning | Open; does not block first pilot |
 | A-011 | Resolve the provider `v1` / Dashboard `v1alpha1` wire-version mismatch and confirm the exact consumed boundary | Edson Tirelli / Anthony Coughlin | Before implementation | Open; blocks A-006 and A-007 |
 | A-012 | Register rolling and supported-release baselines as full provider SHAs with artifact digests; do not add a mutable baseline copy | Edson Tirelli / Rishab Prasad / Radim Kubis | Before implementation | Open; blocks A-006 |
-| A-013 | Select and pin exact contract tool, policy, and reusable-workflow revisions; reject `main`, `latest`, and `@latest` inputs | Edson Tirelli / API Contract testing infrastructure | Before implementation | Open; blocks A-006 |
+| A-013 | Select and pin exact contract tool, policy, and reusable-workflow revisions; reject `main`, `latest`, and `@latest` inputs (re-evaluates the superseded `oasdiff` pick in D-005) | Edson Tirelli / API Contract testing infrastructure | Before implementation | Open; blocks A-006 |
 | A-014 | Implement schema-aware consumer-profile verification covering operations, parameters, response fields, and status codes | Anthony Coughlin / Dashboard | Before seeded scenarios | Open; blocks A-008 |
