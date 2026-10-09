@@ -1,6 +1,6 @@
 # RHOAI API Contract Initiative
 
-Stakeholder brief · **Date:** October 1, 2026 · **Status:** in review
+Stakeholder brief · **Date:** October 9, 2026 · **Status:** in review — re-acceptance required
 
 Move API compatibility feedback into component pull requests so teams can catch integration
 failures earlier, with clear ownership and a repeatable path for intentional changes.
@@ -26,7 +26,12 @@ Cross-component release conformance is part of the longer-term model.
 
 ## First pilot: Model Catalog → Dashboard
 
-The proposed **October 5–16, 2026** pilot covers the Model Catalog REST v1 API used by the Dashboard Model Catalog BFF. It will add a report-only OpenAPI compatibility check and provider-facing consumer coverage for model/version list and lookup, pagination, not-found, and authorization behavior.
+The proposed **October 5–16, 2026** pilot covers the Model Catalog REST v1 API used by the
+Dashboard Model Catalog BFF. An October 9 upstream review found the Dashboard BFF currently
+targets `v1alpha1` while the provider ships `v1` Catalog paths; this mismatch must be resolved
+before implementation, so the execution window requires re-acceptance. Once re-accepted, the pilot
+adds a report-only OpenAPI compatibility check and provider-facing consumer coverage for
+model/version list and lookup, pagination, not-found, and authorization behavior.
 
 **Week 1:** confirm owners and baselines; integrate the provider check and consumer profile.
 
