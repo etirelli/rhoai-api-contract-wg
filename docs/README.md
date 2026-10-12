@@ -25,6 +25,13 @@
 
 - [Dashboard Integration Gap Analysis](research/dashboard-integration-gap-analysis.html) — Anthony
   Coughlin's analysis of upstream failures discovered by Dashboard Cypress.
+- [CRD compatibility research brief](research/crd-compatibility-research.md) — scope, compatibility
+  dimensions, candidate tools, evaluation criteria, and proposed first CRD pilot.
+
+## Requests
+
+- [API Contract Central repository request](requests/api-contract-central-repo.md) — ready-to-submit
+  DevOps request for the official shared runner and pointer-registry repository.
 
 ## Regenerating rendered documents
 
